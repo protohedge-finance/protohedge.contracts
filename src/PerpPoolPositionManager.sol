@@ -40,7 +40,7 @@ contract PerpPoolPositionManager is IPositionManager {
 
   function positionWorth() override public view returns (uint256) {
     uint256 claimedUsdcWorth = perpPoolUtils.getClaimedUsdcWorth(address(poolToken), address(this), address(leveragedPool));
-    uint256 committedUsdcWorth = perpPoolUtils.getCommittedUsdcWorth(address(this));
+    uint256 committedUsdcWorth = perpPoolUtils.getCommittedUsdcWorth(address(poolCommitter), address(this));
 
     return claimedUsdcWorth + committedUsdcWorth;
   }

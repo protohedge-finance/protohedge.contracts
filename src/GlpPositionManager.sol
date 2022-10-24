@@ -8,7 +8,6 @@ import {TokenExposure} from "src/TokenExposure.sol";
 import {IVaultReader} from "gmx/IVaultReader.sol";
 import {IGlpUtils} from "src/IGlpUtils.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
-import {IPoolCommitter} from "perp-pool/IPoolCommitter.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {TokenAllocation} from "src/TokenAllocation.sol";
 import {GlpTokenAllocation} from "src/GlpTokenAllocation.sol";
@@ -29,7 +28,6 @@ contract GlpPositionManager is IPositionManager, Ownable, Test {
 
   IPriceUtils private priceUtils;
   IGlpUtils private glpUtils;
-  IPoolCommitter private poolCommitter;
   DeltaNeutralRebalancer private deltaNeutralRebalancer;
   ERC20 private usdcToken;
   IRewardRouter private rewardRouter;
@@ -41,10 +39,9 @@ contract GlpPositionManager is IPositionManager, Ownable, Test {
     _;
   }
 
-  constructor(address _priceUtilsAddress, address _glpUtilsAddress, address _glpManagerAddress, address _poolCommitterAddress, address _usdcAddress, address _rewardRouterAddress, address _deltaNeutralRebalancerAddress) {
+  constructor(address _priceUtilsAddress, address _glpUtilsAddress, address _glpManagerAddress, address _usdcAddress, address _rewardRouterAddress, address _deltaNeutralRebalancerAddress) {
     priceUtils = IPriceUtils(_priceUtilsAddress);
     glpUtils = IGlpUtils(_glpUtilsAddress);
-    poolCommitter = IPoolCommitter(_poolCommitterAddress);
     usdcToken = ERC20(_usdcAddress);
     deltaNeutralRebalancer = DeltaNeutralRebalancer(_deltaNeutralRebalancerAddress);
     rewardRouter = IRewardRouter(_rewardRouterAddress);

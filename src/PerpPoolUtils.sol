@@ -7,21 +7,20 @@ import {PriceUtils} from "src/PriceUtils.sol";
 import {PositionType} from "src/PositionType.sol";
 
 contract PerpPoolUtils {
-  IPoolCommitter private poolCommitter;
   PriceUtils private priceUtils;
 
-  constructor(address _poolCommitterAddress, address _priceUtilsAddress) {
-    poolCommitter = IPoolCommitter(_poolCommitterAddress);
+  constructor(address _priceUtilsAddress) {
     priceUtils = PriceUtils(_priceUtilsAddress);
   }
 
-  function getCommittedUsdcWorth(address poolPositionPurchaserAddress) external view returns (uint256) {
+  function getCommittedUsdcWorth(address poolCommitterAddress, address perpPoolPositionManagerAddress) external view returns (uint256) {
     uint256 totalCommitments = 0;
     uint256 currentIndex = 0;
+    IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddress);
 
     while (true) {
-      try poolCommitter.unAggregatedCommitments(poolPositionPurchaserAddress,currentIndex) returns (uint256 intervalId) {
-        UserCommitment memory userCommitment = poolCommitter.userCommitments(poolPositionPurchaserAddress, intervalId);
+      try poolCommitter.unAggregatedCommitments(perpPoolPositionManagerAddress,currentIndex) returns (uint256 intervalId) {
+        UserCommitment memory userCommitment = poolCommitter.userCommitments(perpPoolPositionManagerAddress, intervalId);
         totalCommitments += userCommitment.shortMintSettlement;
         currentIndex += 1;
       } catch {

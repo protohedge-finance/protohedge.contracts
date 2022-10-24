@@ -184,8 +184,6 @@ contract DeltaNeutralRebalancerTest is Test {
             ethPoolPositionManagerAddress,
             abi.encodeCall(IPositionManager.rebalance, (59701558))
         );
-
-        deltaNeutralRebalancer.rebalance();
    }
 }
 

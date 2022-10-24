@@ -61,14 +61,12 @@ contract DeltaNeutralRebalancer is Test {
     usdcToken = ERC20(_usdcAddress); 
   }
 
-  function rebalance() external {
-    (uint256 amountOfGlpToHave, uint256 amountOfPerpPoolBtcToHave, uint256 amountOfPerpPoolEthToHave) = this.getRebalancedAllocation();
-    RebalanceQueue memory rebalanceQueue = this.getRebalanceQueue(amountOfGlpToHave, amountOfPerpPoolBtcToHave, amountOfPerpPoolEthToHave);
-    for (uint8 i = 0; i < rebalanceQueue.rebalanceQueueData.length; i++) {
-      if (!rebalanceQueue.rebalanceQueueData[i].positionManager.canRebalance()) {
+  function rebalance(RebalanceQueueData[] memory rebalanceQueueData) external {
+    for (uint8 i = 0; i < rebalanceQueueData.length; i++) {
+      if (!rebalanceQueueData[i].positionManager.canRebalance()) {
         revert("Position manager cannot rebalance");
       }
-      rebalanceQueue.rebalanceQueueData[i].positionManager.rebalance(rebalanceQueue.rebalanceQueueData[i].usdcAmountToHave);
+      rebalanceQueueData[i].positionManager.rebalance(rebalanceQueueData[i].usdcAmountToHave);
     }
   }
 

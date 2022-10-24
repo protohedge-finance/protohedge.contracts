@@ -1,0 +1,23 @@
+{
+  "vaultReader": "0x2A735dd7725a4AC00D2F334F88764DDBF2EE6694",
+  "vault": "0x489ee077994B6658eAfA855C308275EAd8097C4A",
+  "rewardRouter": "0xA906F338CB21815cBc4Bc87ace9e68c87eF8d8F1",
+  "positionManager": "0x87a4088Bd721F83b6c2E5102e2FA47022Cb1c831",
+  "glpManager": "0x321F653eED006AD1C29D174e17d96351BDe22649",
+  "glpToken": "0x4277f8F2c384827B5273592FF7CeBd9f2C1ac258",
+  "poolStateHelper": "0x1d3ac3f2De105F831B4eBeA8987a5f58B26aBA40",
+  "btc": "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f",
+  "eth": "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
+  "usdc": "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8",
+  "poolCommitter": "0xf52a27de6777a943f3ee19b7804f54c67bf64f72",
+  "priceUtils": "0xd64fddf52e5a8e5c4be23dbdcb62f6e8505c6dfda",
+  "glpUtils": "0xb2c4f65dce5b90ebc74fcca1dcc60a5e42abfd90",
+  "deltaNeutralRebalancer": "0xd81a5f23c4c4436b5b17c1745b86684f9084a427",
+  "btcPoolToken": "0x6e5f70E345b4aFd271491290e026dd3d34CBb9f2",
+  "btcLeveragedPool": "0x3aca4f1b1791d00ebbae01d65e9739c9c886f33c",
+  "btcPoolCommitter": "0xf52a27de6777a943f3ee19b7804f54c67bf64f72",
+  "perpPoolUtils": "0x90b5b7dc6b54d13ae34b859a6cdb61e1b1bebd28",
+  "ethPoolToken": "0x6e5f70E345b4aFd271491290e026dd3d34CBb9f2",
+  "ethLeveragedPool": "0x8f4af5a3b58ea60e66690f30335ed8586e46aceb",
+  "ethPoolCommitter": "0xC2940691CE97DDb85f78BB2526495e579Aba5798"
+}
