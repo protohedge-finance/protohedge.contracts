@@ -4,6 +4,7 @@ args=(
 	--rpc-url $RPC_URL
 	--private-key=$PRIVATE_KEY
 	--constructor-args
+		$GLP_POSITION_MANAGER_ID
 		$PRICE_UTILS
 		$GLP_UTILS
 		$GLP_MANAGER

@@ -4,6 +4,7 @@ args=(
 	--rpc-url $RPC_URL
 	--private-key=$PRIVATE_KEY
 	--constructor-args
+        $BTC_PERP_POOL_POSITION_MANAGER_ID
         $BTC_POOL_TOKEN
         $PRICE_UTILS
         $BTC_LEVERAGED_POOL

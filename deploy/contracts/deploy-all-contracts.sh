@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export $(cat ../../.env | xargs)
+
 deps=$(cat contract-dependencies.arbitrum.json)
 
 read_address () {
@@ -28,6 +30,9 @@ export ETH_POOL_TOKEN=$(read_address ".ethPoolToken")
 export ETH_LEVERAGED_POOL=$(read_address ".ethLeveragedPool")
 export ETH_POOL_COMMITTER=$(read_address ".ethPoolCommitter")
 export VERIFY=false
+export GLP_POSITION_MANAGER_ID=1
+export BTC_PERP_POOL_POSITION_MANAGER_ID=2
+export ETH_PERP_POOL_POSITION_MANAGER_ID=3
 
 
 export GLP_UTILS=$(deploy_contract ./deploy-glp-utils.sh)

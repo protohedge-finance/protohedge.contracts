@@ -27,7 +27,17 @@ contract PerpPoolPositionManager is IPositionManager {
   uint256 private lastIntervalId;
   bool private _canRebalance = true;
 
-	constructor(address _poolTokenAddress, address _priceUtilsAddress, address _leveragedPoolAddress, address _trackingTokenAddress, address _poolCommitterAddress, address _usdcAddress, address _perpPoolUtilsAddress, address _deltaNeutralRebalancerAddress) {
+	constructor(
+    uint256 _id,
+    address _poolTokenAddress,
+    address _priceUtilsAddress,
+    address _leveragedPoolAddress,
+    address _trackingTokenAddress,
+    address _poolCommitterAddress,
+    address _usdcAddress,
+    address _perpPoolUtilsAddress,
+    address _deltaNeutralRebalancerAddress
+  ) IPositionManager(_id) {
     poolToken = ERC20(_poolTokenAddress);
     priceUtils = PriceUtils(_priceUtilsAddress);
     leveragedPool = ILeveragedPool(_leveragedPoolAddress);

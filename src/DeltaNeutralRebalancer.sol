@@ -43,7 +43,7 @@ struct RebalanceQueue {
   uint256 sellIndex;
 }
 
-contract DeltaNeutralRebalancer is Test {
+contract DeltaNeutralRebalancer {
   IPositionManager private glpPositionManager;
   IPositionManager private btcPerpPoolPositionManager;
   IPositionManager private ethPerpPoolPositionManager;
@@ -114,12 +114,6 @@ contract DeltaNeutralRebalancer is Test {
     return rebalanceQueue;
   }
 
-  function helloworld() external {
-    TokenAllocation memory glpBtcAllocation = glpPositionManager.allocationByToken(btcAddress);
-    TokenAllocation memory glpEthAllocation = glpPositionManager.allocationByToken(ethAddress);
-    TokenAllocation memory btcPerpAllocation = btcPerpPoolPositionManager.allocationByToken(btcAddress);
-    TokenAllocation memory ethPerpAllocation = ethPerpPoolPositionManager.allocationByToken(ethAddress);
-  }
   function getRebalancedAllocation() external view returns (uint256, uint256, uint256) {
     uint256 totalLiquidity = this.getTotalLiquidity();
     // Get allocation information of assets inside positions

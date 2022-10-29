@@ -4,8 +4,15 @@ pragma solidity ^0.8.13;
 import {TokenExposure,NetTokenExposure} from "src/TokenExposure.sol";
 import {TokenAllocation} from "src/TokenAllocation.sol";
 import {RebalanceAction} from "src/RebalanceAction.sol";
+import {PositionStats} from "src/PositionStats.sol";
 
 abstract contract IPositionManager {
+  uint256 public id;
+
+  constructor(uint256 _id) {
+    id = _id;
+  }
+
   function positionWorth() virtual external view returns (uint256);
   function costBasis() virtual external view returns (uint256);
   function pnl() virtual external view returns (int256);
@@ -43,5 +50,16 @@ abstract contract IPositionManager {
     if (usdcAmountToHave > worth) return RebalanceAction.Buy;
     if (usdcAmountToHave < worth) return RebalanceAction.Sell;
     return RebalanceAction.Nothing; 
+  }
+
+  function stats() external view returns (PositionStats memory) {
+    return PositionStats({
+      positionWorth: this.positionWorth(),
+      costBasis: this.costBasis(),
+      pnl: this.pnl(),
+      tokenExposures: this.exposures(),
+      tokenAllocation: this.allocation(),
+      canRebalance: this.canRebalance()
+    });    
   }
 }

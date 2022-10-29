@@ -39,7 +39,15 @@ contract GlpPositionManager is IPositionManager, Ownable, Test {
     _;
   }
 
-  constructor(address _priceUtilsAddress, address _glpUtilsAddress, address _glpManagerAddress, address _usdcAddress, address _rewardRouterAddress, address _deltaNeutralRebalancerAddress) {
+  constructor(
+    uint256 _id,
+    address _priceUtilsAddress,
+    address _glpUtilsAddress,
+    address _glpManagerAddress,
+    address _usdcAddress,
+    address _rewardRouterAddress,
+    address _deltaNeutralRebalancerAddress
+  ) IPositionManager(_id) {
     priceUtils = IPriceUtils(_priceUtilsAddress);
     glpUtils = IGlpUtils(_glpUtilsAddress);
     usdcToken = ERC20(_usdcAddress);

@@ -4,6 +4,7 @@ args=(
 	--rpc-url $RPC_URL
 	--private-key=$PRIVATE_KEY
 	--constructor-args
+        $ETH_PERP_POOL_POSITION_MANAGER_ID
         $ETH_POOL_TOKEN
         $PRICE_UTILS
         $ETH_LEVERAGED_POOL
