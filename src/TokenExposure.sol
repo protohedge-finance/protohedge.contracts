@@ -6,6 +6,7 @@ import {IPositionManager} from "src/IPositionManager.sol";
 struct TokenExposure {
   int256 amount;
   address token; 
+  string symbol;
 }
 
 struct NetTokenExposure {

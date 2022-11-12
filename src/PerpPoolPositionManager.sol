@@ -10,16 +10,18 @@ import {IPoolCommitter} from "perp-pool/IPoolCommitter.sol";
 import {PerpPoolUtils} from "src/PerpPoolUtils.sol";
 import {TokenAllocation} from "src/TokenAllocation.sol";
 import {PositionType} from "src/PositionType.sol";
-import {DeltaNeutralRebalancer} from "src/DeltaNeutralRebalancer.sol";
+import {ProtohedgeVault} from "src/ProtohedgeVault.sol";
+
 
 contract PerpPoolPositionManager is IPositionManager {
+  string private positionName;
   ERC20 private poolToken;
   PriceUtils private priceUtils;
   ILeveragedPool private leveragedPool;
   IPoolCommitter private poolCommitter;
   ERC20 private usdcToken; 
   PerpPoolUtils private perpPoolUtils;
-  DeltaNeutralRebalancer private deltaNeutralRebalancer;
+  ProtohedgeVault private protohedgeVault;
 
   uint256 private constant USDC_MULTIPLIER = 1*10**6; 
   uint256 private _costBasis;
@@ -28,7 +30,7 @@ contract PerpPoolPositionManager is IPositionManager {
   bool private _canRebalance = true;
 
 	constructor(
-    uint256 _id,
+    string memory _positionName,
     address _poolTokenAddress,
     address _priceUtilsAddress,
     address _leveragedPoolAddress,
@@ -36,8 +38,8 @@ contract PerpPoolPositionManager is IPositionManager {
     address _poolCommitterAddress,
     address _usdcAddress,
     address _perpPoolUtilsAddress,
-    address _deltaNeutralRebalancerAddress
-  ) IPositionManager(_id) {
+    address _protohedgeVaultAddress 
+  ) {
     poolToken = ERC20(_poolTokenAddress);
     priceUtils = PriceUtils(_priceUtilsAddress);
     leveragedPool = ILeveragedPool(_leveragedPoolAddress);
@@ -45,7 +47,12 @@ contract PerpPoolPositionManager is IPositionManager {
     poolCommitter = IPoolCommitter(_poolCommitterAddress);
     usdcToken = ERC20(_usdcAddress);
     perpPoolUtils = PerpPoolUtils(_perpPoolUtilsAddress);
-    deltaNeutralRebalancer = DeltaNeutralRebalancer(_deltaNeutralRebalancerAddress);
+    protohedgeVault = ProtohedgeVault(_protohedgeVaultAddress);
+    positionName = _positionName;
+  }
+
+  function name() override public view returns (string memory) {
+    return positionName;
   }
 
   function positionWorth() override public view returns (uint256) {
@@ -65,11 +72,12 @@ contract PerpPoolPositionManager is IPositionManager {
 
   function buy(uint256 usdcAmount) override external returns (uint256) {
     bytes32 commitParams = perpPoolUtils.encodeCommitParams(usdcAmount, IPoolCommitter.CommitType.ShortMint, false, false);
-    usdcToken.transferFrom(address(deltaNeutralRebalancer), address(this), usdcAmount);
+    usdcToken.transferFrom(address(protohedgeVault), address(this), usdcAmount);
     usdcToken.approve(address(leveragedPool), usdcAmount);
     poolCommitter.commit(commitParams);
 
     _costBasis += usdcAmount;
+    return usdcAmount;
   }
 
   function sell(uint256 usdcAmount) override external returns (uint256) {
@@ -77,22 +85,29 @@ contract PerpPoolPositionManager is IPositionManager {
     bytes32 commitParams = perpPoolUtils.encodeCommitParams(tokensToSell, IPoolCommitter.CommitType.ShortBurn, false, false);
     poolCommitter.commit(commitParams);
     _costBasis -= usdcAmount;
+
+    return tokensToSell;
   }
 
   function exposures() override external view returns (TokenExposure[] memory) {
     TokenExposure[] memory tokenExposures = new TokenExposure[](1);
     tokenExposures[0] = TokenExposure({
       amount: -1 * int256(positionWorth()) * 3,
-      token: address(trackingToken)      
+      token: address(trackingToken),
+      symbol: trackingToken.symbol()
     });
+
+    return tokenExposures;
   }
 
   function allocation() override external view returns (TokenAllocation[] memory) {
     TokenAllocation[] memory tokenAllocations = new TokenAllocation[](1);
     tokenAllocations[0] = TokenAllocation({
       tokenAddress: address(trackingToken),
-      percentage: 100000,
-      leverage: 3
+      symbol: trackingToken.symbol(),
+      percentage: 10000,
+      leverage: 3,
+      positionType: PositionType.Short 
     });
     return tokenAllocations;
   }
@@ -110,6 +125,8 @@ contract PerpPoolPositionManager is IPositionManager {
       _canRebalance = true; 
     }
   }
+
+  function compound() override external {}
 
   function canRebalance() override external view returns (bool) {
     return _canRebalance;

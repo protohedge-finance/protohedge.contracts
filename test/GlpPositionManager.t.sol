@@ -3,9 +3,9 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import {GlpPositionManager} from "src/GlpPositionManager.sol";
-import {IPriceUtils} from "src/IPriceUtils.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {IRewardRouter} from "gmx/IRewardRouter.sol";
+import {PriceUtils} from "src/PriceUtils.sol";
 
 contract GlpPositionManagerTest is Test {
   address mockAddress = address(0);
@@ -13,11 +13,11 @@ contract GlpPositionManagerTest is Test {
   uint256 usdcAmount = 2*10**6;
 
   function setUp() public {
-    glpPositionManager = new GlpPositionManager(1, mockAddress, mockAddress, mockAddress, mockAddress, mockAddress, address(this));
+    glpPositionManager = new GlpPositionManager(mockAddress, mockAddress, mockAddress, mockAddress, mockAddress, mockAddress, mockAddress, address(this));
 
     vm.mockCall(
         mockAddress,
-        abi.encodeCall(IPriceUtils.glpPrice, ()),
+        abi.encodeCall(PriceUtils.glpPrice, ()),
         abi.encode(1*10**6)
     );
 

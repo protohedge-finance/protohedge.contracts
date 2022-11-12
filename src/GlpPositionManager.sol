@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import {IPositionManager} from "src/IPositionManager.sol";
-import {IPriceUtils} from "src/IPriceUtils.sol";
+import {PriceUtils} from "src/PriceUtils.sol";
 import {TokenExposure} from "src/TokenExposure.sol";
 import {IVaultReader} from "gmx/IVaultReader.sol";
 import {IGlpUtils} from "src/IGlpUtils.sol";
@@ -14,6 +14,13 @@ import {GlpTokenAllocation} from "src/GlpTokenAllocation.sol";
 import {DeltaNeutralRebalancer} from "src/DeltaNeutralRebalancer.sol";
 import {IRewardRouter} from "gmx/IRewardRouter.sol";
 import {IGlpManager} from "gmx/IGlpManager.sol";
+import {ProtohedgeVault} from "src/ProtohedgeVault.sol";
+import {PositionType} from "src/PositionType.sol";
+
+// Open Zeppelin libraries for controlling upgradability and access.
+import "openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
+import "openzeppelin-contracts/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "openzeppelin-contracts/contracts/proxy/utils/OwnableUpgradeable.sol";
 
 contract GlpPositionManager is IPositionManager, Ownable, Test {
   uint256 private constant USDC_MULTIPLIER = 1*10**6;
@@ -22,38 +29,48 @@ contract GlpPositionManager is IPositionManager, Ownable, Test {
   uint256 private constant BASIS_POINTS_DIVISOR = 10000;
   uint256 private constant DEFAULT_SLIPPAGE = 30;
   uint256 private constant PRICE_PRECISION = 10 ** 30;
+  uint256 private constant ETH_PRICE_DIVISOR = 1*10**20;
 
   uint256 private _costBasis;
   uint256 private tokenAmount;
 
-  IPriceUtils private priceUtils;
+  PriceUtils private priceUtils;
   IGlpUtils private glpUtils;
-  DeltaNeutralRebalancer private deltaNeutralRebalancer;
+  ProtohedgeVault private protohedgeVault;
   ERC20 private usdcToken;
+  ERC20 private wethToken;
   IRewardRouter private rewardRouter;
   IGlpManager private glpManager;
+  address private ethPriceFeedAddress;
   address[] private glpTokens;
 
-  modifier onlyRebalancer {
-    require(msg.sender == address(deltaNeutralRebalancer));
+  modifier onlyVault {
+    require(msg.sender == address(protohedgeVault));
     _;
   }
 
   constructor(
-    uint256 _id,
     address _priceUtilsAddress,
     address _glpUtilsAddress,
     address _glpManagerAddress,
     address _usdcAddress,
+    address _wethAddress,
+    address _ethPriceFeedAddress, 
     address _rewardRouterAddress,
-    address _deltaNeutralRebalancerAddress
-  ) IPositionManager(_id) {
-    priceUtils = IPriceUtils(_priceUtilsAddress);
+    address _protohedgeVaultAddress 
+  ) {
+    priceUtils = PriceUtils(_priceUtilsAddress);
     glpUtils = IGlpUtils(_glpUtilsAddress);
     usdcToken = ERC20(_usdcAddress);
-    deltaNeutralRebalancer = DeltaNeutralRebalancer(_deltaNeutralRebalancerAddress);
+    wethToken = ERC20(_wethAddress);
+    protohedgeVault = ProtohedgeVault(_protohedgeVaultAddress);
     rewardRouter = IRewardRouter(_rewardRouterAddress);
     glpManager = IGlpManager(_glpManagerAddress);
+    ethPriceFeedAddress = _ethPriceFeedAddress;
+  }
+
+  function name() override external pure returns (string memory) {
+    return "Glp";
   }
 
   function positionWorth() override public view returns (uint256) {
@@ -68,7 +85,7 @@ contract GlpPositionManager is IPositionManager, Ownable, Test {
   function buy(uint256 usdcAmount) override external returns (uint256) {
     uint256 currentPrice = priceUtils.glpPrice();
     uint256 glpToPurchase = usdcAmount * currentPrice / USDC_MULTIPLIER;
-    usdcToken.transferFrom(address(deltaNeutralRebalancer), address(this), usdcAmount);
+    usdcToken.transferFrom(address(protohedgeVault), address(this), usdcAmount);
 
     uint256 glpAmountAfterSlippage = glpToPurchase * (BASIS_POINTS_DIVISOR - DEFAULT_SLIPPAGE) / BASIS_POINTS_DIVISOR;
     usdcToken.approve(address(glpManager), usdcAmount);
@@ -85,7 +102,7 @@ contract GlpPositionManager is IPositionManager, Ownable, Test {
     uint256 glpToSell = usdcAmount * currentPrice / USDC_MULTIPLIER;
     uint256 usdcAmountAfterSlippage = usdcAmount * (BASIS_POINTS_DIVISOR - DEFAULT_SLIPPAGE) / BASIS_POINTS_DIVISOR;
 
-    uint256 usdcRetrieved = rewardRouter.unstakeAndRedeemGlp(address(usdcToken), glpToSell, usdcAmountAfterSlippage, address(deltaNeutralRebalancer));
+    uint256 usdcRetrieved = rewardRouter.unstakeAndRedeemGlp(address(usdcToken), glpToSell, usdcAmountAfterSlippage, address(protohedgeVault));
     _costBasis -= usdcRetrieved;
     tokenAmount -= glpToSell;
     return usdcRetrieved;
@@ -106,8 +123,10 @@ contract GlpPositionManager is IPositionManager, Ownable, Test {
     for (uint i = 0; i < glpAllocations.length; i++) {
       tokenAllocations[i] = TokenAllocation({
         tokenAddress: glpAllocations[i].tokenAddress,
+        symbol: ERC20(glpAllocations[i].tokenAddress).symbol(),
         percentage: glpAllocations[i].allocation,
-        leverage: 1
+        leverage: 1,
+        positionType: PositionType.Long
       });
     }
 
@@ -124,5 +143,16 @@ contract GlpPositionManager is IPositionManager, Ownable, Test {
 
   function setGlpTokens(address[] memory _glpTokens) external onlyOwner() {
     glpTokens = _glpTokens;
+  }
+
+  function compound() override external {
+    rewardRouter.handleRewards(false, false, false, false, false, true, false);  
+    uint256 amountOfWeth = wethToken.balanceOf(address(this));
+    wethToken.approve(address(glpManager), amountOfWeth);
+    uint256 usdcAmount = priceUtils.getTokenPrice(ethPriceFeedAddress) * amountOfWeth / ETH_PRICE_DIVISOR;
+    uint256 glpAmount = rewardRouter.mintAndStakeGlp(address(wethToken), amountOfWeth, 0, 0);
+
+    _costBasis += uint256(usdcAmount);
+    tokenAmount += glpAmount;  
   }
 }

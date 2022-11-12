@@ -5,6 +5,8 @@ import {IGlpUtils} from "src/IGlpUtils.sol";
 import {IVaultReader} from "gmx/IVaultReader.sol";
 import {TokenExposure} from "src/TokenExposure.sol";
 import {GlpTokenAllocation} from "src/GlpTokenAllocation.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
+import {PositionType} from "src/PositionType.sol";
 
 contract GlpUtils is IGlpUtils {
     IVaultReader private vaultReader;
@@ -85,7 +87,8 @@ contract GlpUtils is IGlpUtils {
             tokenExposures[i] = TokenExposure({
                 amount: int256((glpPositionWorth * tokenAllocations[i].allocation) /
                     PERCENT_MULTIPLIER),
-                token: tokenAllocations[i].tokenAddress
+                token: tokenAllocations[i].tokenAddress,
+                symbol: ERC20(tokenAllocations[i].tokenAddress).symbol()
             });
         }
 

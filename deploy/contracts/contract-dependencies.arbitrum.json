@@ -19,5 +19,6 @@
   "perpPoolUtils": "0x90b5b7dc6b54d13ae34b859a6cdb61e1b1bebd28",
   "ethPoolToken": "0x6e5f70E345b4aFd271491290e026dd3d34CBb9f2",
   "ethLeveragedPool": "0x8f4af5a3b58ea60e66690f30335ed8586e46aceb",
-  "ethPoolCommitter": "0xC2940691CE97DDb85f78BB2526495e579Aba5798"
+  "ethPoolCommitter": "0xC2940691CE97DDb85f78BB2526495e579Aba5798",
+  "ethPriceFeed": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612"
 }

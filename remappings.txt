@@ -4,3 +4,4 @@ gmx/=lib/gmx/src/
 perp-pool/=lib/perp-pool/src/
 openzeppelin-contracts/=lib/openzeppelin-contracts/
 solmate/=lib/solmate/src/
+chainlink/=lib/chainlink/src

@@ -4,8 +4,6 @@ args=(
 	--rpc-url $RPC_URL
 	--private-key=$PRIVATE_KEY
 	--constructor-args
-		$BTC
-		$ETH
 		$USDC
     --etherscan-api-key=$ETHERSCAN_API_KEY
     --json

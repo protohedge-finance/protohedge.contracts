@@ -4,7 +4,7 @@ args=(
 	--rpc-url $RPC_URL
 	--private-key=$PRIVATE_KEY
 	--constructor-args
-        $ETH_PERP_POOL_POSITION_MANAGER_ID
+        $ETH_PERP_POOL_POSITION_MANAGER_NAME
         $ETH_POOL_TOKEN
         $PRICE_UTILS
         $ETH_LEVERAGED_POOL
@@ -12,7 +12,7 @@ args=(
         $ETH_POOL_COMMITTER
         $USDC
         $PERP_POOL_UTILS
-        $DELTA_NEUTRAL_REBALANCER
+        $GLP_PERP_POOL_VAULT
     --etherscan-api-key=$ETHERSCAN_API_KEY
     --json
 )

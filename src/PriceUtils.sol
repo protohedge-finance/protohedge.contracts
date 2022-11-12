@@ -3,14 +3,14 @@ pragma solidity ^0.8.13;
 
 import {IGlpManager} from "gmx/IGlpManager.sol";
 import {IGlp} from "gmx/IGlp.sol";
-import {IPriceUtils} from "./IPriceUtils.sol";
 import {IVault} from "gmx/IVault.sol";
 import {IPoolStateHelper} from "perp-pool/IPoolStateHelper.sol";
 import {ILeveragedPool} from "perp-pool/ILeveragedPool.sol";
 import {ExpectedPoolState, ILeveragedPool2} from "perp-pool/IPoolStateHelper.sol";
 import {PositionType} from "src/PositionType.sol";
+import {AggregatorV3Interface} from "chainlink/AggregatorV3Interface.sol";
 
-contract PriceUtils is IPriceUtils {
+contract PriceUtils {
   IGlpManager private glpManager;
   IGlp private glp;
   IVault private vault;
@@ -30,6 +30,20 @@ contract PriceUtils is IPriceUtils {
     uint256 totalSupply = glp.totalSupply();
     
     return aum * USDC_MULTIPLIER / totalSupply;
+  }
+
+  function getTokenPrice(address priceFeedAddress) public view returns (uint256) {
+    AggregatorV3Interface priceFeed = AggregatorV3Interface(priceFeedAddress); 
+
+    (
+      /*uint80 roundID*/,
+      int price,
+      /*uint startedAt*/,
+      /*uint timeStamp*/,
+      /*uint80 answeredInRound*/
+    ) = priceFeed.latestRoundData();
+
+    return uint256(price);
   }
 
   function perpPoolTokenPrice(address leveragedPoolAddress, PositionType positionType) public view returns (uint256) {

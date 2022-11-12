@@ -4,15 +4,12 @@ pragma solidity ^0.8.13;
 import {TokenExposure,NetTokenExposure} from "src/TokenExposure.sol";
 import {TokenAllocation} from "src/TokenAllocation.sol";
 import {RebalanceAction} from "src/RebalanceAction.sol";
-import {PositionStats} from "src/PositionStats.sol";
+import {PositionManagerStats} from "src/PositionManagerStats.sol";
 
 abstract contract IPositionManager {
   uint256 public id;
 
-  constructor(uint256 _id) {
-    id = _id;
-  }
-
+  function name() virtual external view returns (string memory);
   function positionWorth() virtual external view returns (uint256);
   function costBasis() virtual external view returns (uint256);
   function pnl() virtual external view returns (int256);
@@ -22,6 +19,7 @@ abstract contract IPositionManager {
   function sell(uint256) virtual external returns (uint256);
   function price() virtual external view returns (uint256);
   function canRebalance() virtual external view returns (bool);
+  function compound() virtual external;
   function rebalance(uint256 usdcAmountToHave) virtual external returns (bool) {
     RebalanceAction rebalanceAction = this.getRebalanceAction(usdcAmountToHave);
     uint256 worth = this.positionWorth();
@@ -52,8 +50,9 @@ abstract contract IPositionManager {
     return RebalanceAction.Nothing; 
   }
 
-  function stats() external view returns (PositionStats memory) {
-    return PositionStats({
+  function stats() external view returns (PositionManagerStats memory) {
+    return PositionManagerStats({
+      positionManagerAddress: address(this),
       positionWorth: this.positionWorth(),
       costBasis: this.costBasis(),
       pnl: this.pnl(),
