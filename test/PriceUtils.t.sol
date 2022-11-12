@@ -44,7 +44,7 @@ contract PriceUtilsTest is Test {
             abi.encode(50)
       );
  
-      priceUtils = new PriceUtils(mockAddress, mockAddress, mockAddress, mockAddress);
+      priceUtils = new PriceUtils();
   }
 
    function testGetGlpPrice() public {

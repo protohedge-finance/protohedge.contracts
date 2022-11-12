@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.13;
+
 interface AggregatorV3Interface {
   function decimals() external view returns (uint8);
 

@@ -3,5 +3,6 @@ forge-std/=lib/forge-std/src/
 gmx/=lib/gmx/src/
 perp-pool/=lib/perp-pool/src/
 openzeppelin-contracts/=lib/openzeppelin-contracts/
+openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/
 solmate/=lib/solmate/src/
 chainlink/=lib/chainlink/src

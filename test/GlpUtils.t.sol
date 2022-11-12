@@ -56,7 +56,7 @@ contract GlpUtilsTest is Test {
       abi.encode(mockResponse)
     );
 
-    glpUtils = new GlpUtils(mockAddress, mockAddress, mockAddress, mockAddress);
+    glpUtils = new GlpUtils();
   }
 
   function testGetGlpTokenAllocations() public {

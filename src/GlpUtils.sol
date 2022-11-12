@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {IGlpUtils} from "src/IGlpUtils.sol";
 import {IVaultReader} from "gmx/IVaultReader.sol";
 import {TokenExposure} from "src/TokenExposure.sol";
 import {GlpTokenAllocation} from "src/GlpTokenAllocation.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {PositionType} from "src/PositionType.sol";
 
-contract GlpUtils is IGlpUtils {
+import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
+
+contract GlpUtils is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     IVaultReader private vaultReader;
     address private vaultAddress;
     address private positionManagerAddress;
@@ -18,17 +21,21 @@ contract GlpUtils is IGlpUtils {
     uint256 private constant VAULT_PROPS_LENGTH = 14;
     uint256 private constant PERCENT_MULTIPLIER = 10000;
 
-    constructor(
+    function initialize(
         address _vaultReaderAddress,
         address _vaultAddress,
         address _positionManagerAddress,
         address _wethAddress
-    ) {
+    ) public initializer {
         vaultReader = IVaultReader(_vaultReaderAddress);
         vaultAddress = _vaultAddress;
         positionManagerAddress = _positionManagerAddress;
         wethAddress = _wethAddress;
+
+        __Ownable_init();
     }
+
+    function _authorizeUpgrade(address) internal override onlyOwner {}
 
     function getGlpTokenAllocations(address[] memory tokens)
         public

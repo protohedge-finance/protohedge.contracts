@@ -17,19 +17,26 @@ struct RebalanceQueueData {
   uint256 usdcAmountToHave;
 } 
 
+import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 
-contract ProtohedgeVault {
+contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   string public vaultName; 
   ERC20 private usdcToken;
   PhvToken private phvToken;
 
   IPositionManager[] public positionManagers;
 
-  constructor(string memory _vaultName, address _usdcAddress) {
+  function initialize(string memory _vaultName, address _usdcAddress) public initializer {
     vaultName = _vaultName;
     usdcToken = ERC20(_usdcAddress);
     phvToken = new PhvToken();
+
+    __Ownable_init();
   }
+
+  function _authorizeUpgrade(address) internal override onlyOwner {}
 
   function vaultWorth() public view returns (uint256) {
     uint256 totalLiquidity = this.getAvailableLiquidity(); 

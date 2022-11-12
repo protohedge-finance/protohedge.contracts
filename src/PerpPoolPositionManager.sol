@@ -12,8 +12,11 @@ import {TokenAllocation} from "src/TokenAllocation.sol";
 import {PositionType} from "src/PositionType.sol";
 import {ProtohedgeVault} from "src/ProtohedgeVault.sol";
 
+import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 
-contract PerpPoolPositionManager is IPositionManager {
+contract PerpPoolPositionManager is IPositionManager, Initializable, UUPSUpgradeable, OwnableUpgradeable {
   string private positionName;
   ERC20 private poolToken;
   PriceUtils private priceUtils;
@@ -29,7 +32,7 @@ contract PerpPoolPositionManager is IPositionManager {
   uint256 private lastIntervalId;
   bool private _canRebalance = true;
 
-	constructor(
+	function initialize(
     string memory _positionName,
     address _poolTokenAddress,
     address _priceUtilsAddress,
@@ -39,7 +42,7 @@ contract PerpPoolPositionManager is IPositionManager {
     address _usdcAddress,
     address _perpPoolUtilsAddress,
     address _protohedgeVaultAddress 
-  ) {
+  ) public initializer {
     poolToken = ERC20(_poolTokenAddress);
     priceUtils = PriceUtils(_priceUtilsAddress);
     leveragedPool = ILeveragedPool(_leveragedPoolAddress);
@@ -49,7 +52,11 @@ contract PerpPoolPositionManager is IPositionManager {
     perpPoolUtils = PerpPoolUtils(_perpPoolUtilsAddress);
     protohedgeVault = ProtohedgeVault(_protohedgeVaultAddress);
     positionName = _positionName;
+
+    __Ownable_init();
   }
+
+  function _authorizeUpgrade(address) internal override onlyOwner {}
 
   function name() override public view returns (string memory) {
     return positionName;

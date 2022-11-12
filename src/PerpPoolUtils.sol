@@ -6,12 +6,20 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 import {PriceUtils} from "src/PriceUtils.sol";
 import {PositionType} from "src/PositionType.sol";
 
-contract PerpPoolUtils {
+import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
+
+contract PerpPoolUtils is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   PriceUtils private priceUtils;
 
-  constructor(address _priceUtilsAddress) {
+  function initialize(address _priceUtilsAddress) public initializer {
     priceUtils = PriceUtils(_priceUtilsAddress);
+
+    __Ownable_init();
   }
+
+  function _authorizeUpgrade(address) internal override onlyOwner {}
 
   function getCommittedUsdcWorth(address poolCommitterAddress, address perpPoolPositionManagerAddress) external view returns (uint256) {
     uint256 totalCommitments = 0;

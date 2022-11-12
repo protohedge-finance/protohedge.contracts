@@ -10,7 +10,11 @@ import {ExpectedPoolState, ILeveragedPool2} from "perp-pool/IPoolStateHelper.sol
 import {PositionType} from "src/PositionType.sol";
 import {AggregatorV3Interface} from "chainlink/AggregatorV3Interface.sol";
 
-contract PriceUtils {
+import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
+
+contract PriceUtils is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   IGlpManager private glpManager;
   IGlp private glp;
   IVault private vault;
@@ -18,12 +22,16 @@ contract PriceUtils {
   uint32 private constant USDC_MULTIPLIER = 1*10**6;
   uint32 private constant PERCENT_DIVISOR = 1000;
 
-  constructor(address _glpManager, address _glp, address _vaultAddress, address _poolStateHelperAddress) {
+  function initialize(address _glpManager, address _glp, address _vaultAddress, address _poolStateHelperAddress) public initializer {
     glpManager = IGlpManager(_glpManager);
     glp = IGlp(_glp);
     vault = IVault(_vaultAddress);
     poolStateHelper = IPoolStateHelper(_poolStateHelperAddress);
+
+    __Ownable_init();
   }
+
+  function _authorizeUpgrade(address) internal override onlyOwner {}
 
   function glpPrice() public view returns (uint256) {
     uint256 aum = glpManager.getAumInUsdg(true);

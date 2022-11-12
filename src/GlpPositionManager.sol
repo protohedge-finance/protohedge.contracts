@@ -6,7 +6,7 @@ import {IPositionManager} from "src/IPositionManager.sol";
 import {PriceUtils} from "src/PriceUtils.sol";
 import {TokenExposure} from "src/TokenExposure.sol";
 import {IVaultReader} from "gmx/IVaultReader.sol";
-import {IGlpUtils} from "src/IGlpUtils.sol";
+import {GlpUtils} from "src/GlpUtils.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {TokenAllocation} from "src/TokenAllocation.sol";
@@ -16,11 +16,6 @@ import {IRewardRouter} from "gmx/IRewardRouter.sol";
 import {IGlpManager} from "gmx/IGlpManager.sol";
 import {ProtohedgeVault} from "src/ProtohedgeVault.sol";
 import {PositionType} from "src/PositionType.sol";
-
-// Open Zeppelin libraries for controlling upgradability and access.
-import "openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
-import "openzeppelin-contracts/contracts/proxy/utils/UUPSUpgradeable.sol";
-import "openzeppelin-contracts/contracts/proxy/utils/OwnableUpgradeable.sol";
 
 contract GlpPositionManager is IPositionManager, Ownable, Test {
   uint256 private constant USDC_MULTIPLIER = 1*10**6;
@@ -35,7 +30,7 @@ contract GlpPositionManager is IPositionManager, Ownable, Test {
   uint256 private tokenAmount;
 
   PriceUtils private priceUtils;
-  IGlpUtils private glpUtils;
+  GlpUtils private glpUtils;
   ProtohedgeVault private protohedgeVault;
   ERC20 private usdcToken;
   ERC20 private wethToken;
@@ -60,7 +55,7 @@ contract GlpPositionManager is IPositionManager, Ownable, Test {
     address _protohedgeVaultAddress 
   ) {
     priceUtils = PriceUtils(_priceUtilsAddress);
-    glpUtils = IGlpUtils(_glpUtilsAddress);
+    glpUtils = GlpUtils(_glpUtilsAddress);
     usdcToken = ERC20(_usdcAddress);
     wethToken = ERC20(_wethAddress);
     protohedgeVault = ProtohedgeVault(_protohedgeVaultAddress);
