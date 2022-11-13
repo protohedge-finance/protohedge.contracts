@@ -11,13 +11,18 @@ import {DeployHelper} from "src/DeployHelper.sol";
 contract DeployPerpPoolUtils is Script, Test {
   using DeployHelper for address;  
 
-  function run() public {
+  function run() public returns (address) {
+    vm.startBroadcast(); 
+
     PerpPoolUtils implementation = new PerpPoolUtils();
     ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
-    PerpPoolUtils wrapped = PerpPoolUtils(address(proxy));
-
-    emit log_address(address(proxy));
+    address proxyAddress = address(proxy);
+    PerpPoolUtils wrapped = PerpPoolUtils(proxyAddress);
 
     wrapped.initialize(vm.envAddress("PRICE_UTILS"));
+
+    vm.stopBroadcast();
+    vm.setEnv("PERP_POOL_UTILS", proxyAddress.toString());
+    return proxyAddress;
   } 
 }

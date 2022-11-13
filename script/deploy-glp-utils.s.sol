@@ -2,7 +2,9 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
+
 import "forge-std/Test.sol";
+import "forge-std/Vm.sol";
 
 import {GlpUtils} from "src/GlpUtils.sol";
 import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -11,12 +13,13 @@ import {DeployHelper} from "src/DeployHelper.sol";
 contract DeployGlpUtils is Script, Test {
   using DeployHelper for address;
 
-  function run() public {
+  function run() public returns (address) {
+    vm.startBroadcast(); 
+
     GlpUtils implementation = new GlpUtils();
     ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
-    GlpUtils wrapped = GlpUtils(address(proxy));
-
-    emit log_address(address(proxy));
+    address proxyAddress = address(proxy);
+    GlpUtils wrapped = GlpUtils(proxyAddress);
 
     wrapped.initialize(
       vm.envAddress("VAULT_READER"),
@@ -24,5 +27,9 @@ contract DeployGlpUtils is Script, Test {
       vm.envAddress("POSITION_MANAGER"),
       vm.envAddress("ETH") 
     );
+
+    vm.setEnv("GLP_UTILS", proxyAddress.toString());
+    vm.stopBroadcast();
+    return proxyAddress;
   } 
 }

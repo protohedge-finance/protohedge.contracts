@@ -1,3 +1,3 @@
 #!/bin/bash
 
-forge script DeployGlpUtils --json | tail -1
+forge script DeployGlpUtils --broadcast --json | tail -1

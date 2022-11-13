@@ -13,7 +13,7 @@ contract GlpPositionManagerTest is Test {
   uint256 usdcAmount = 2*10**6;
 
   function setUp() public {
-    glpPositionManager = new GlpPositionManager(mockAddress, mockAddress, mockAddress, mockAddress, mockAddress, mockAddress, mockAddress, address(this));
+    glpPositionManager = new GlpPositionManager();
 
     vm.mockCall(
         mockAddress,

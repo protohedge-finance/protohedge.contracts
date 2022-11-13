@@ -17,7 +17,12 @@ import {IGlpManager} from "gmx/IGlpManager.sol";
 import {ProtohedgeVault} from "src/ProtohedgeVault.sol";
 import {PositionType} from "src/PositionType.sol";
 
-contract GlpPositionManager is IPositionManager, Ownable, Test {
+import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
+
+
+contract GlpPositionManager is IPositionManager, Initializable, UUPSUpgradeable, OwnableUpgradeable {
   uint256 private constant USDC_MULTIPLIER = 1*10**6;
   uint256 private constant GLP_MULTIPLIER = 1*10**18;
   uint256 private constant PERCENT_DIVISOR = 1000;
@@ -44,7 +49,7 @@ contract GlpPositionManager is IPositionManager, Ownable, Test {
     _;
   }
 
-  constructor(
+  function initialize(
     address _priceUtilsAddress,
     address _glpUtilsAddress,
     address _glpManagerAddress,
@@ -53,7 +58,7 @@ contract GlpPositionManager is IPositionManager, Ownable, Test {
     address _ethPriceFeedAddress, 
     address _rewardRouterAddress,
     address _protohedgeVaultAddress 
-  ) {
+  ) public initializer {
     priceUtils = PriceUtils(_priceUtilsAddress);
     glpUtils = GlpUtils(_glpUtilsAddress);
     usdcToken = ERC20(_usdcAddress);
@@ -62,7 +67,11 @@ contract GlpPositionManager is IPositionManager, Ownable, Test {
     rewardRouter = IRewardRouter(_rewardRouterAddress);
     glpManager = IGlpManager(_glpManagerAddress);
     ethPriceFeedAddress = _ethPriceFeedAddress;
+
+    __Ownable_init();
   }
+
+  function _authorizeUpgrade(address) internal override onlyOwner {}
 
   function name() override external pure returns (string memory) {
     return "Glp";
@@ -136,7 +145,7 @@ contract GlpPositionManager is IPositionManager, Ownable, Test {
     return priceUtils.glpPrice();
   }
 
-  function setGlpTokens(address[] memory _glpTokens) external onlyOwner() {
+  function setGlpTokens(address[] memory _glpTokens) external onlyOwner {
     glpTokens = _glpTokens;
   }
 

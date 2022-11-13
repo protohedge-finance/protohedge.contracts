@@ -11,12 +11,13 @@ import {DeployHelper} from "src/DeployHelper.sol";
 contract DeployBtcPerpPoolPositionManager is Script, Test {
   using DeployHelper for address;
   
-  function run() public {
+  function run() public returns (address) {
+    vm.startBroadcast();
+
     PerpPoolPositionManager implementation = new PerpPoolPositionManager();
     ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
+    address proxyAddress = address(proxy);
     PerpPoolPositionManager wrapped = PerpPoolPositionManager(address(proxy));
-
-    emit log_address(address(proxy));
 
     wrapped.initialize(
       vm.envString("BTC_PERP_POOL_POSITION_MANAGER_NAME"),
@@ -29,5 +30,10 @@ contract DeployBtcPerpPoolPositionManager is Script, Test {
       vm.envAddress("PERP_POOL_UTILS"),
       vm.envAddress("GLP_PERP_POOL_VAULT") 
     );
+
+    vm.setEnv("BTC_PERP_POOL_POSITION_MANAGER", proxyAddress.toString());
+    vm.stopBroadcast();
+
+    return proxyAddress;
   } 
 }
