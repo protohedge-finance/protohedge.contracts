@@ -8,11 +8,9 @@ import "forge-std/Vm.sol";
 
 import {GlpUtils} from "src/GlpUtils.sol";
 import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {DeployHelper} from "src/DeployHelper.sol";
+import {Deployer} from "src/Deployer.sol";
 
-contract DeployGlpUtils is Script, Test {
-  using DeployHelper for address;
-
+contract DeployGlpUtils is Script, Test, Deployer {
   function run() public returns (address) {
     vm.startBroadcast(); 
 
@@ -28,7 +26,7 @@ contract DeployGlpUtils is Script, Test {
       vm.envAddress("ETH") 
     );
 
-    vm.setEnv("GLP_UTILS", proxyAddress.toString());
+    vm.setEnv("GLP_UTILS", toString(proxyAddress));
     vm.stopBroadcast();
     return proxyAddress;
   } 

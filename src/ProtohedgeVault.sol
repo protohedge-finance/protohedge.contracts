@@ -6,6 +6,13 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 import {PhvToken} from "src/PhvToken.sol";
 import {PositionManagerStats} from "src/PositionManagerStats.sol";
 import {VaultStats} from "src/VaultStats.sol";
+import {PriceUtils} from "src/PriceUtils.sol";
+
+import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
+
+uint256 constant GAS_PRICE_DIVISOR = 1*10**20;
 
 struct VaultInfo {
   IPositionManager[] positionManagers;
@@ -17,16 +24,14 @@ struct RebalanceQueueData {
   uint256 usdcAmountToHave;
 } 
 
-import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
-
 contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   string public vaultName; 
   ERC20 private usdcToken;
   PhvToken private phvToken;
-
   IPositionManager[] public positionManagers;
+  PriceUtils private priceUtils; 
+  address private ethPriceFeedAddress;
+  uint256 private gasCostPayed;
 
   function initialize(string memory _vaultName, address _usdcAddress) public initializer {
     vaultName = _vaultName;
@@ -66,15 +71,19 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   }
 
   function rebalance(RebalanceQueueData[] memory rebalanceQueueData) external {
+    uint256 initGas = gasleft();
     for (uint8 i = 0; i < rebalanceQueueData.length; i++) {
       if (!rebalanceQueueData[i].positionManager.canRebalance()) {
         revert("Position manager cannot rebalance");
       }
       rebalanceQueueData[i].positionManager.rebalance(rebalanceQueueData[i].usdcAmountToHave);
     }
+
+    uint256 gasCost = estimateGasCost(initGas);
+    gasCostPayed += gasCost;
   }
 
-  function stats() external view returns (VaultStats memory) {
+  function stats() public view returns (VaultStats memory) {
     PositionManagerStats[] memory positionManagersStats = new PositionManagerStats[](positionManagers.length);
 
     for (uint256 i = 0; i < positionManagersStats.length; i++) {
@@ -89,7 +98,7 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     });
   }
 
-  function getPositionManagers() external view returns (IPositionManager[] memory) {
+  function getPositionManagers() public view returns (IPositionManager[] memory) {
     return positionManagers;
   }
 
@@ -99,5 +108,28 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     for (uint256 index = 0; index < _positionManagers.length; index++) {
       usdcToken.approve(address(positionManagers[index]), 9999999999999999999999999);
     }
+  }
+
+  function vaultCostBasis() public view returns (uint256) {
+    uint256 costBasis = gasCostPayed;
+    for (uint256 i = 0; i < positionManagers.length; i++) {
+      costBasis += positionManagers[i].costBasis();
+    }
+
+    return costBasis; 
+  }
+
+  function estimateGasCost(uint256 initialGasLeft) public view returns (uint256) {
+    uint256 gasPrice = tx.gasprice;
+    uint256 ethPrice = priceUtils.getTokenPrice(ethPriceFeedAddress);
+    return gasPrice * ethPrice * (initialGasLeft - gasleft()) / GAS_PRICE_DIVISOR; 
+  }
+
+  function setPriceUtils(address priceUtilsAddress) external {
+    priceUtils = PriceUtils(priceUtilsAddress); 
+  }
+
+  function setEthPriceFeedAddress(address _ethPriceFeedAddress) external {
+    ethPriceFeedAddress = _ethPriceFeedAddress;
   }
 }

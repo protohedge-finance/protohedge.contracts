@@ -10,15 +10,19 @@
   "eth": "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
   "usdc": "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8",
   "poolCommitter": "0xf52a27de6777a943f3ee19b7804f54c67bf64f72",
-  "priceUtils": "0xd64fddf52e5a8e5c4be23dbdcb62f6e8505c6dfda",
-  "glpUtils": "0xb2c4f65dce5b90ebc74fcca1dcc60a5e42abfd90",
   "deltaNeutralRebalancer": "0xd81a5f23c4c4436b5b17c1745b86684f9084a427",
   "btcPoolToken": "0x6e5f70E345b4aFd271491290e026dd3d34CBb9f2",
   "btcLeveragedPool": "0x3aca4f1b1791d00ebbae01d65e9739c9c886f33c",
   "btcPoolCommitter": "0xf52a27de6777a943f3ee19b7804f54c67bf64f72",
-  "perpPoolUtils": "0x90b5b7dc6b54d13ae34b859a6cdb61e1b1bebd28",
   "ethPoolToken": "0x6e5f70E345b4aFd271491290e026dd3d34CBb9f2",
   "ethLeveragedPool": "0x8f4af5a3b58ea60e66690f30335ed8586e46aceb",
   "ethPoolCommitter": "0xC2940691CE97DDb85f78BB2526495e579Aba5798",
-  "ethPriceFeed": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612"
+  "ethPriceFeed": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+  "priceUtils": "0x536930a281e85772dc80f48e5fcc0db2dd0e568d",
+  "glpUtils": "0x564cd3D92CB5D77d9eDe4bB09BDbbDbd568967bA",
+  "perpPoolUtils": "0x17079d73c7f904e2183E5b5733a816aBA71BB83D",
+  "glpPerpPoolVault": "0x519676f17927175982CD64aEa6c026Bb9CdB67f5",
+  "btcPerpPoolPositionManager": "0x933A2340e7D861161AFa255c53B2D7eE7c3C9407",
+  "ethPerpPoolPositionManager": "0x84Cf5F8E2b38dde753E93751dC690D6B4180DA53",
+  "glpPositionManager": "0xD991FcD34A67B28d7AFcD1e9FB496dd0a5b62c7b"
 }

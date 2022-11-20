@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
-library DeployHelper {
+contract Deployer {
 	 function toString(
       address addr) public pure returns (
       string memory) {

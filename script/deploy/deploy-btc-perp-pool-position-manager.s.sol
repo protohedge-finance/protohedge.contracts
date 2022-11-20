@@ -6,11 +6,10 @@ import "forge-std/Test.sol";
 
 import {PerpPoolPositionManager} from "src/PerpPoolPositionManager.sol";
 import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {DeployHelper} from "src/DeployHelper.sol";
+import {Deployer} from "src/Deployer.sol";
 
-contract DeployEthPerpPoolPositionManager is Script, Test {
-  using DeployHelper for address;
-
+contract DeployBtcPerpPoolPositionManager is Script, Test, Deployer {
+  
   function run() public returns (address) {
     vm.startBroadcast();
 
@@ -20,18 +19,18 @@ contract DeployEthPerpPoolPositionManager is Script, Test {
     PerpPoolPositionManager wrapped = PerpPoolPositionManager(address(proxy));
 
     wrapped.initialize(
-      vm.envString("ETH_PERP_POOL_POSITION_MANAGER_NAME"),
-      vm.envAddress("ETH_POOL_TOKEN"),
+      vm.envString("BTC_PERP_POOL_POSITION_MANAGER_NAME"),
+      vm.envAddress("BTC_POOL_TOKEN"),
       vm.envAddress("PRICE_UTILS"),
-      vm.envAddress("ETH_LEVERAGED_POOL"),
-      vm.envAddress("ETH"),
-      vm.envAddress("ETH_POOL_COMMITTER"),
+      vm.envAddress("BTC_LEVERAGED_POOL"),
+      vm.envAddress("BTC"),
+      vm.envAddress("BTC_POOL_COMMITTER"),
       vm.envAddress("USDC"),
       vm.envAddress("PERP_POOL_UTILS"),
       vm.envAddress("GLP_PERP_POOL_VAULT") 
     );
 
-    vm.setEnv("ETH_PERP_POOL_POSITION_MANAGER", proxyAddress.toString());
+    vm.setEnv("BTC_PERP_POOL_POSITION_MANAGER", toString(proxyAddress));
     vm.stopBroadcast();
 
     return proxyAddress;

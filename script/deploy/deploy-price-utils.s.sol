@@ -7,10 +7,9 @@ import "forge-std/Vm.sol";
 
 import {PriceUtils} from "src/PriceUtils.sol";
 import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {DeployHelper} from "src/DeployHelper.sol";
+import {Deployer} from "src/Deployer.sol";
 
-contract DeployPriceUtils is Script, Test {
-  using DeployHelper for address;
+contract DeployPriceUtils is Script, Test, Deployer {
 
   function run() public returns (address) {
     vm.startBroadcast();
@@ -28,7 +27,7 @@ contract DeployPriceUtils is Script, Test {
     );
 
     vm.stopBroadcast();
-    vm.setEnv("PRICE_UTILS", proxyAddress.toString());
+    vm.setEnv("PRICE_UTILS", toString(proxyAddress));
 
     return proxyAddress;
   } 

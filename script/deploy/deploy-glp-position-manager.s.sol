@@ -6,11 +6,9 @@ import "forge-std/Test.sol";
 
 import {GlpPositionManager} from "src/GlpPositionManager.sol";
 import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {DeployHelper} from "src/DeployHelper.sol";
+import {Deployer} from "src/Deployer.sol";
 
-contract DeployGlpPositionManager is Script, Test {
-  using DeployHelper for address;
-   
+contract DeployGlpPositionManager is Script, Test, Deployer {
   function run() public returns (address) {
     vm.startBroadcast();
 
@@ -31,7 +29,7 @@ contract DeployGlpPositionManager is Script, Test {
       vm.envAddress("GLP_PERP_POOL_VAULT")
     );
 
-    vm.setEnv("GLP_POSITION_MANAGER", proxyAddress.toString());
+    vm.setEnv("GLP_POSITION_MANAGER", toString(proxyAddress));
     vm.stopBroadcast();
 
     return proxyAddress;

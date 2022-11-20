@@ -6,11 +6,9 @@ import "forge-std/Test.sol";
 
 import {PerpPoolUtils} from "src/PerpPoolUtils.sol";
 import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {DeployHelper} from "src/DeployHelper.sol";
+import {Deployer} from "src/Deployer.sol";
 
-contract DeployPerpPoolUtils is Script, Test {
-  using DeployHelper for address;  
-
+contract DeployPerpPoolUtils is Script, Test, Deployer {
   function run() public returns (address) {
     vm.startBroadcast(); 
 
@@ -22,7 +20,7 @@ contract DeployPerpPoolUtils is Script, Test {
     wrapped.initialize(vm.envAddress("PRICE_UTILS"));
 
     vm.stopBroadcast();
-    vm.setEnv("PERP_POOL_UTILS", proxyAddress.toString());
+    vm.setEnv("PERP_POOL_UTILS", toString(proxyAddress));
     return proxyAddress;
   } 
 }

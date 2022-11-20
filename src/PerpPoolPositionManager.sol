@@ -30,7 +30,7 @@ contract PerpPoolPositionManager is IPositionManager, Initializable, UUPSUpgrade
   uint256 private _costBasis;
   ERC20 private trackingToken;
   uint256 private lastIntervalId;
-  bool private _canRebalance = true;
+  bool private _canRebalance;
 
 	function initialize(
     string memory _positionName,
@@ -52,6 +52,7 @@ contract PerpPoolPositionManager is IPositionManager, Initializable, UUPSUpgrade
     perpPoolUtils = PerpPoolUtils(_perpPoolUtilsAddress);
     protohedgeVault = ProtohedgeVault(_protohedgeVaultAddress);
     positionName = _positionName;
+    _canRebalance = true;
 
     __Ownable_init();
   }

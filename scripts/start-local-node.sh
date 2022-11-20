@@ -1,1 +1,0 @@
-anvil --steps-tracing --fork-url=https://arb1.arbitrum.io/rpc --balance=10000000000000000000 --gas-price=0 --block-base-fee-per-gas=0 --gas-limit=0

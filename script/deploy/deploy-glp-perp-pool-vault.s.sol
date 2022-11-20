@@ -6,13 +6,11 @@ import "forge-std/Test.sol";
 
 import {ProtohedgeVault} from "src/ProtohedgeVault.sol";
 import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {DeployHelper} from "src/DeployHelper.sol";
+import {Deployer} from "src/Deployer.sol";
 import {IPositionManager} from "src/IPositionManager.sol";
 
-contract DeployGlpPerpPoolVault is Script, Test {
-  using DeployHelper for address; 
-  
-  function run() public returns (address) {
+contract DeployGlpPerpPoolVault is Script, Deployer {
+  function run() public returns (address, address) {
     vm.startBroadcast();
     ProtohedgeVault implementation = new ProtohedgeVault();
     ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
@@ -24,14 +22,18 @@ contract DeployGlpPerpPoolVault is Script, Test {
       vm.envAddress("USDC")
     );
 
-    vm.setEnv("GLP_PERP_POOL_VAULT", proxyAddress.toString());
+    vm.setEnv("GLP_PERP_POOL_VAULT", toString(proxyAddress));
     vm.stopBroadcast();
 
-    return proxyAddress;
+    return (proxyAddress, address(implementation));
   }
 
   function setPositionManagers(address glpPerpPoolVaultAddress, IPositionManager[] memory glpPerpPoolPositionManagers) external {
+    vm.startBroadcast();
+
     ProtohedgeVault glpPerpPoolsVault = ProtohedgeVault(glpPerpPoolVaultAddress);
     glpPerpPoolsVault.setPositionManagers(glpPerpPoolPositionManagers);
+
+    vm.stopBroadcast();
   } 
 }
