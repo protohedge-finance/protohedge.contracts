@@ -57,6 +57,10 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     return usdcToken.balanceOf(address(this));
   }
 
+  function amountToRebalance() public view returns (uint256) {
+    return vaultWorth() * 8 / 10;
+  }
+
   function addLiquidity(uint256 usdcAmount) external {
     usdcToken.transferFrom(msg.sender, address(this), usdcAmount);
     phvToken.mint(msg.sender, usdcAmount);

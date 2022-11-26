@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.11;
 
 import {TokenExposure,NetTokenExposure} from "src/TokenExposure.sol";
 import {TokenAllocation} from "src/TokenAllocation.sol";
@@ -52,15 +52,7 @@ abstract contract IPositionManager {
 
   function stats() external view returns (PositionManagerStats memory) {
     return PositionManagerStats({
-      positionManagerAddress: address(this),
-      positionWorth: this.positionWorth(),
-      costBasis: this.costBasis(),
-      pnl: this.pnl(),
-      tokenExposures: this.exposures(),
-      tokenAllocation: this.allocation(),
-      canRebalance: this.canRebalance()
+      name: this.name()
     });    
   }
-
-  
 }

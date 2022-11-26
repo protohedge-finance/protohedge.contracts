@@ -6,3 +6,5 @@ openzeppelin-contracts/=lib/openzeppelin-contracts/
 openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/
 solmate/=lib/solmate/src/
 chainlink/=lib/chainlink/src
+aave/=lib/aave/src
+

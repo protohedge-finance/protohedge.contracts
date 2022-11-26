@@ -20,16 +20,26 @@ export BTC=$(read_address ".btc")
 export ETH=$(read_address ".eth")
 export USDC=$(read_address ".usdc")
 export BTC_POOL_TOKEN=$(read_address ".btcPoolToken")
+export BTC_PRICE_FEED=$(read_address ".btcPriceFeed")
 export BTC_LEVERAGED_POOL=$(read_address ".btcLeveragedPool")
 export BTC_POOL_COMMITTER=$(read_address ".btcPoolCommitter")
 export ETH_POOL_TOKEN=$(read_address ".ethPoolToken")
 export ETH_LEVERAGED_POOL=$(read_address ".ethLeveragedPool")
 export ETH_POOL_COMMITTER=$(read_address ".ethPoolCommitter")
 export ETH_PRICE_FEED=$(read_address ".ethPriceFeed")
+export AAVE_L2_POOL=$(read_address ".aaveL2Pool")
+export AAVE_L2_ENCODER=$(read_address ".aaveL2Encoder")
+export ETH_PRICE_FEED=$(read_address ".ethPriceFeed")
+
 export VERIFY=false
 export BTC_PERP_POOL_POSITION_MANAGER_NAME="BtcPerpPool"
 export ETH_PERP_POOL_POSITION_MANAGER_NAME="EthPerpPool"
+export AAVE_BORROW_BTC_POSITION_MANAGER_NAME="AaveBorrowBtc"
 export GLP_PERP_POOL_VAULT_NAME="GLP-PERP-POOL"
+export AAVE_BORROW_BTC_POSITION_MANAGER_DECIMALS=8
+
+
+
 
 forge script DeployAllContracts \
 	--broadcast \

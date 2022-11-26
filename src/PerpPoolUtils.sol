@@ -10,6 +10,8 @@ import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.s
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 
+uint256 constant USDC_DIVISOR = 1*10**6;
+
 contract PerpPoolUtils is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   PriceUtils private priceUtils;
 
@@ -42,7 +44,7 @@ contract PerpPoolUtils is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   function getClaimedUsdcWorth(address poolToken, address owner, address leveragedPoolAddress) external view returns (uint256) {
     uint256 balance = ERC20(poolToken).balanceOf(owner);
     uint256 claimedAmount = balance * priceUtils.perpPoolTokenPrice(leveragedPoolAddress, PositionType.Short);
-    return balance * claimedAmount;
+    return claimedAmount / USDC_DIVISOR;
   }
 
   function encodeCommitParams(

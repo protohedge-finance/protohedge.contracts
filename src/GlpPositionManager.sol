@@ -101,13 +101,13 @@ contract GlpPositionManager is IPositionManager, Initializable, UUPSUpgradeable,
     return glpAmount;
   }
 
+  event unstakeAndRedeemGlp(address token, uint256 glpToSell, uint256 minOutput, address transferAddress);
+
   function sell(uint256 usdcAmount) override external returns (uint256) {
     uint256 currentPrice = priceUtils.glpPrice();
-    uint256 glpToSell = usdcAmount * currentPrice / USDC_MULTIPLIER;
-    uint256 usdcAmountAfterSlippage = usdcAmount * (BASIS_POINTS_DIVISOR - DEFAULT_SLIPPAGE) / BASIS_POINTS_DIVISOR;
-
-    uint256 usdcRetrieved = rewardRouter.unstakeAndRedeemGlp(address(usdcToken), glpToSell, usdcAmountAfterSlippage, address(protohedgeVault));
-    _costBasis -= usdcRetrieved;
+    uint256 glpToSell = usdcAmount * currentPrice * USDC_MULTIPLIER;
+    uint256 usdcRetrieved = rewardRouter.unstakeAndRedeemGlp(address(usdcToken), glpToSell, 0, address(protohedgeVault));
+     _costBasis -= usdcRetrieved;
     tokenAmount -= glpToSell;
     return usdcRetrieved;
   }

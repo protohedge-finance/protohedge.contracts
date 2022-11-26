@@ -14,8 +14,10 @@ import {DeployGlpPerpPoolVault} from "script/deploy/deploy-glp-perp-pool-vault.s
 import {DeployBtcPerpPoolPositionManager} from "script/deploy/deploy-btc-perp-pool-position-manager.s.sol";
 import {DeployEthPerpPoolPositionManager} from "script/deploy/deploy-eth-perp-pool-position-manager.s.sol";
 import {DeployGlpPositionManager} from "script/deploy/deploy-glp-position-manager.s.sol";
+import {DeployAaveBorrowBtcPositionManager} from "script/deploy/deploy-aave-borrow-btc-position-manager.s.sol";
 import {GlpPositionManager} from "src/GlpPositionManager.sol";
 import {ProtohedgeVault} from "src/ProtohedgeVault.sol";
+import {AaveBorrowBtcPositionManager} from "src/AaveBorrowBtcPositionManager.sol";
 import {IPositionManager} from "src/IPositionManager.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 
@@ -30,6 +32,7 @@ contract DeployAllContracts is Script, Test {
     DeployBtcPerpPoolPositionManager deployBtcPerpPoolPositionManager = new DeployBtcPerpPoolPositionManager();
     DeployEthPerpPoolPositionManager deployEthPerpPoolPositionManager = new DeployEthPerpPoolPositionManager();
     DeployGlpPositionManager deployGlpPositionManager = new DeployGlpPositionManager();
+    DeployAaveBorrowBtcPositionManager deployAaveBorrowBtcPositionManager = new DeployAaveBorrowBtcPositionManager();
 
     address priceUtilsAddress = deployPriceUtils.run();
     address glpUtilsAddress = deployGlpUtils.run();
@@ -38,13 +41,13 @@ contract DeployAllContracts is Script, Test {
     address btcPerpPoolPositionManagerAddress = deployBtcPerpPoolPositionManager.run();
     address ethPerpPoolPositionManagerAddress = deployEthPerpPoolPositionManager.run();
     address glpPositionManagerAddress = deployGlpPositionManager.run();
+    address aaveBorrowBtcPositionManagerAddress = deployAaveBorrowBtcPositionManager.run();
 
     deployGlpPositionManager.setGlpTokens(glpPositionManagerAddress);
 
-    IPositionManager[] memory glpPerpPoolPositionManagers = new IPositionManager[](3);
+    IPositionManager[] memory glpPerpPoolPositionManagers = new IPositionManager[](2);
     glpPerpPoolPositionManagers[0] = IPositionManager(glpPositionManagerAddress);
-    glpPerpPoolPositionManagers[1] = IPositionManager(btcPerpPoolPositionManagerAddress);
-    glpPerpPoolPositionManagers[2] = IPositionManager(ethPerpPoolPositionManagerAddress);
+    glpPerpPoolPositionManagers[1] = IPositionManager(aaveBorrowBtcPositionManagerAddress);
 
     deployGlpPerpPoolVault.setPositionManagers(glpPerpPoolVaultProxy, glpPerpPoolPositionManagers);
 
@@ -60,5 +63,6 @@ contract DeployAllContracts is Script, Test {
     emit log_named_address("BtcPerpPoolPositionManager is: ", btcPerpPoolPositionManagerAddress);
     emit log_named_address("EthPerpPoolPositionManager is: ", ethPerpPoolPositionManagerAddress);
     emit log_named_address("GlpPositionManager is: ", glpPositionManagerAddress);
+    emit log_named_address("AaveBorrowBtcPositionManager is: ", aaveBorrowBtcPositionManagerAddress);
   } 
 }
