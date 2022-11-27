@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import {PriceUtils} from "src/PriceUtils.sol";
-import {MockUsdc} from "test/mocks/MockUsdc.sol";
+import {MintableToken} from "test/mocks/MintableToken.sol";
 import {IGlp} from "gmx/IGlp.sol";
 import {IGlpManager} from "gmx/IGlpManager.sol";
 import {IVault} from "gmx/IVault.sol";

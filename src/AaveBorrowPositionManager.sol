@@ -9,14 +9,18 @@ import {TokenAllocation} from "src/TokenAllocation.sol";
 import {TokenExposure} from "src/TokenExposure.sol";
 import {ProtohedgeVault} from "src/ProtohedgeVault.sol";
 import {PriceUtils} from "src/PriceUtils.sol";
+import {PositionType} from "src/PositionType.sol";
+import {IGmxRouter} from "gmx/IGmxRouter.sol";
+import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 
 uint256 constant USDC_MULTIPLIER = 1*10**6; 
+uint256 constant PERCENTAGE_MULTIPLIER = 10000;
 
-contract AaveBorrowBtcPositionManager is IPositionManager, Initializable, UUPSUpgradeable, OwnableUpgradeable {
+contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgradeable, OwnableUpgradeable {
   string private positionName;
   uint256 private usdcAmountBorrowed;
   bool private _canRebalance;
@@ -32,7 +36,7 @@ contract AaveBorrowBtcPositionManager is IPositionManager, Initializable, UUPSUp
   ERC20 private borrowToken;
   ProtohedgeVault private protohedgeVault;
   PriceUtils private priceUtils;
-  
+  IGmxRouter private gmxRouter;
 
   function initialize(
     string memory _positionName,
@@ -44,7 +48,8 @@ contract AaveBorrowBtcPositionManager is IPositionManager, Initializable, UUPSUp
     address _usdcAddress,
     address _borrowTokenAddress,
     address _protohedgeVaultAddress,
-    address _priceUtilsAddress
+    address _priceUtilsAddress,
+    address _gmxRouterAddress
   ) public initializer {
     positionName = _positionName;
     decimals = _decimals;
@@ -58,6 +63,7 @@ contract AaveBorrowBtcPositionManager is IPositionManager, Initializable, UUPSUp
     borrowToken = ERC20(_borrowTokenAddress);
     protohedgeVault = ProtohedgeVault(_protohedgeVaultAddress);
     priceUtils = PriceUtils(_priceUtilsAddress);
+    gmxRouter = IGmxRouter(_gmxRouterAddress);
 
     __Ownable_init();
   }
@@ -69,7 +75,7 @@ contract AaveBorrowBtcPositionManager is IPositionManager, Initializable, UUPSUp
   }
 
   function positionWorth() override public view returns (uint256) {
-    return collateral + (amountOfTokens * price() / (1*10**decimals));
+    return collateral + getLoanWorth();
   }
 
   function costBasis() override public view returns (uint256) {
@@ -81,6 +87,7 @@ contract AaveBorrowBtcPositionManager is IPositionManager, Initializable, UUPSUp
   }
 
   function buy(uint256 usdcAmount) override external returns (uint256) {
+    // require(protohedgeVault.getAvailableLiquidity() >= usdcAmount, "Insufficient liquidity");
     usdcToken.transferFrom(address(protohedgeVault), address(this), usdcAmount);
     usdcToken.approve(address(l2Pool), usdcAmount);
 
@@ -104,36 +111,75 @@ contract AaveBorrowBtcPositionManager is IPositionManager, Initializable, UUPSUp
     );
 
     l2Pool.borrow(borrowArgs);
+    borrowToken.approve(address(gmxRouter), tokensToBorrow);
+
+    address[] memory swapPath = new address[](2);
+    swapPath[0] = address(usdcToken);
+    swapPath[1] = address(borrowToken);
+    
+    gmxRouter.swap(swapPath, tokensToBorrow, 0, address(this));
 
     amountOfTokens += tokensToBorrow;
-    usdcAmountToBorrow = usdcAmountToBorrow;
+    usdcAmountBorrowed += usdcAmountToBorrow;
      
     return 0;
   }
 
   function sell(uint256 usdcAmount) override external returns (uint256) {
-    return 0;
+    require(collateral - usdcAmount >= 0, "Insufficient tokens to sell");
+    uint256 desiredCollateral = collateral - usdcAmount;
+    uint256 desiredBorrowAmount = desiredCollateral * (targetLtv / 100);
+    uint256 usdcAmountToRepay = getLoanWorth() - desiredBorrowAmount;
+    uint256 tokenAmountToRepay = usdcAmountToRepay * (1*10**decimals) / price();
+    
+    bytes32 repayArgs = l2Encoder.encodeRepayParams(
+      address(borrowToken),
+      Math.min(tokenAmountToRepay, amountOfTokens),
+      0
+    );
+
+    l2Pool.repay(repayArgs);
   }
 
   function exposures() override external view returns (TokenExposure[] memory) {
-    return new TokenExposure[](0);
+    TokenExposure[] memory tokenExposures = new TokenExposure[](1);
+    tokenExposures[0] = TokenExposure({
+      amount: int256(positionWorth()),
+      token: address(borrowToken),
+      symbol: borrowToken.symbol()
+    });
   }
 
   function allocation() override external view returns (TokenAllocation[] memory) {
-    return new TokenAllocation[](0);
+    TokenAllocation[] memory tokenAllocations = new TokenAllocation[](1);
+    tokenAllocations[0] = TokenAllocation({
+      tokenAddress: address(borrowToken),
+      symbol: borrowToken.symbol(),
+      percentage: getLoanToValue(),
+      leverage: 1,
+      positionType: PositionType.Short 
+    });
+    return tokenAllocations;
   }
 
   function price() override public view returns (uint256) {
-    uint256 price = priceUtils.getTokenPrice(tokenPriceFeedAddress) / (1*10**2); // Convert to USDC price 
-    return price;
+    return priceUtils.getTokenPrice(tokenPriceFeedAddress) / (1*10**2); // Convert to USDC price 
   }
 
   function claim() external {
-    }
+  }
 
   function compound() override external {}
 
   function canRebalance() override external view returns (bool) {
     return _canRebalance;
+  }
+
+  function getLoanToValue() public view returns (uint256) {
+    return getLoanWorth() * PERCENTAGE_MULTIPLIER / collateral;
+  }
+
+  function getLoanWorth() public view returns (uint256) {
+    return amountOfTokens * price() / (1*10**decimals);
   }
 }

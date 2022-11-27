@@ -14,10 +14,10 @@ import {DeployGlpPerpPoolVault} from "script/deploy/deploy-glp-perp-pool-vault.s
 import {DeployBtcPerpPoolPositionManager} from "script/deploy/deploy-btc-perp-pool-position-manager.s.sol";
 import {DeployEthPerpPoolPositionManager} from "script/deploy/deploy-eth-perp-pool-position-manager.s.sol";
 import {DeployGlpPositionManager} from "script/deploy/deploy-glp-position-manager.s.sol";
-import {DeployAaveBorrowBtcPositionManager} from "script/deploy/deploy-aave-borrow-btc-position-manager.s.sol";
+import {DeployAaveBorrowPositionManager} from "script/deploy/deploy-aave-borrow-position-manager.s.sol";
 import {GlpPositionManager} from "src/GlpPositionManager.sol";
 import {ProtohedgeVault} from "src/ProtohedgeVault.sol";
-import {AaveBorrowBtcPositionManager} from "src/AaveBorrowBtcPositionManager.sol";
+import {AaveBorrowPositionManager} from "src/AaveBorrowPositionManager.sol";
 import {IPositionManager} from "src/IPositionManager.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 
@@ -32,7 +32,7 @@ contract DeployAllContracts is Script, Test {
     DeployBtcPerpPoolPositionManager deployBtcPerpPoolPositionManager = new DeployBtcPerpPoolPositionManager();
     DeployEthPerpPoolPositionManager deployEthPerpPoolPositionManager = new DeployEthPerpPoolPositionManager();
     DeployGlpPositionManager deployGlpPositionManager = new DeployGlpPositionManager();
-    DeployAaveBorrowBtcPositionManager deployAaveBorrowBtcPositionManager = new DeployAaveBorrowBtcPositionManager();
+    DeployAaveBorrowPositionManager deployAaveBorrowBtcPositionManager = new DeployAaveBorrowPositionManager();
 
     address priceUtilsAddress = deployPriceUtils.run();
     address glpUtilsAddress = deployGlpUtils.run();
