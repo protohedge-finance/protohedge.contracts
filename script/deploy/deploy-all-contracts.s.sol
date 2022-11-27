@@ -14,7 +14,7 @@ import {DeployGlpPerpPoolVault} from "script/deploy/deploy-glp-perp-pool-vault.s
 import {DeployBtcPerpPoolPositionManager} from "script/deploy/deploy-btc-perp-pool-position-manager.s.sol";
 import {DeployEthPerpPoolPositionManager} from "script/deploy/deploy-eth-perp-pool-position-manager.s.sol";
 import {DeployGlpPositionManager} from "script/deploy/deploy-glp-position-manager.s.sol";
-import {DeployAaveBorrowPositionManager} from "script/deploy/deploy-aave-borrow-position-manager.s.sol";
+import {DeployAaveBtcBorrowPositionManager} from "script/deploy/deploy-aave-btc-borrow-position-manager.s.sol";
 import {GlpPositionManager} from "src/GlpPositionManager.sol";
 import {ProtohedgeVault} from "src/ProtohedgeVault.sol";
 import {AaveBorrowPositionManager} from "src/AaveBorrowPositionManager.sol";
@@ -32,7 +32,7 @@ contract DeployAllContracts is Script, Test {
     DeployBtcPerpPoolPositionManager deployBtcPerpPoolPositionManager = new DeployBtcPerpPoolPositionManager();
     DeployEthPerpPoolPositionManager deployEthPerpPoolPositionManager = new DeployEthPerpPoolPositionManager();
     DeployGlpPositionManager deployGlpPositionManager = new DeployGlpPositionManager();
-    DeployAaveBorrowPositionManager deployAaveBorrowBtcPositionManager = new DeployAaveBorrowPositionManager();
+    DeployAaveBtcBorrowPositionManager deployAaveBorrowBtcPositionManager = new DeployAaveBtcBorrowPositionManager();
 
     address priceUtilsAddress = deployPriceUtils.run();
     address glpUtilsAddress = deployGlpUtils.run();

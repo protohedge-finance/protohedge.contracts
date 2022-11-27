@@ -65,6 +65,10 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
     priceUtils = PriceUtils(_priceUtilsAddress);
     gmxRouter = IGmxRouter(_gmxRouterAddress);
 
+    usdcToken.approve(address(l2Pool), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
+    usdcToken.approve(address(gmxRouter), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
+    borrowToken.approve(address(gmxRouter), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
+
     __Ownable_init();
   }
 
@@ -87,9 +91,8 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
   }
 
   function buy(uint256 usdcAmount) override external returns (uint256) {
-    // require(protohedgeVault.getAvailableLiquidity() >= usdcAmount, "Insufficient liquidity");
+    require(protohedgeVault.getAvailableLiquidity() >= usdcAmount, "Insufficient liquidity");
     usdcToken.transferFrom(address(protohedgeVault), address(this), usdcAmount);
-    usdcToken.approve(address(l2Pool), usdcAmount);
 
     bytes32 supplyArgs = l2Encoder.encodeSupplyParams(
       address(usdcToken),
@@ -111,13 +114,12 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
     );
 
     l2Pool.borrow(borrowArgs);
-    borrowToken.approve(address(gmxRouter), tokensToBorrow);
 
     address[] memory swapPath = new address[](2);
-    swapPath[0] = address(usdcToken);
-    swapPath[1] = address(borrowToken);
-    
-    gmxRouter.swap(swapPath, tokensToBorrow, 0, address(this));
+    swapPath[0] = address(borrowToken);
+    swapPath[1] = address(usdcToken);
+   
+    gmxRouter.swap(swapPath, tokensToBorrow, 0, address(protohedgeVault));
 
     amountOfTokens += tokensToBorrow;
     usdcAmountBorrowed += usdcAmountToBorrow;
@@ -130,8 +132,17 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
     uint256 desiredCollateral = collateral - usdcAmount;
     uint256 desiredBorrowAmount = desiredCollateral * (targetLtv / 100);
     uint256 usdcAmountToRepay = getLoanWorth() - desiredBorrowAmount;
+    uint256 usdcAmountWithSlippage = usdcAmountToRepay + (usdcAmountToRepay / 100);
+    usdcToken.transferFrom(address(protohedgeVault), address(this), usdcAmountWithSlippage);
     uint256 tokenAmountToRepay = usdcAmountToRepay * (1*10**decimals) / price();
+
     
+    address[] memory swapPath = new address[](2);
+    swapPath[0] = address(usdcToken);
+    swapPath[1] = address(borrowToken);
+
+    gmxRouter.swap(swapPath, usdcAmountWithSlippage, tokenAmountToRepay, address(this));
+
     bytes32 repayArgs = l2Encoder.encodeRepayParams(
       address(borrowToken),
       Math.min(tokenAmountToRepay, amountOfTokens),
@@ -148,6 +159,7 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
       token: address(borrowToken),
       symbol: borrowToken.symbol()
     });
+    return tokenExposures;
   }
 
   function allocation() override external view returns (TokenAllocation[] memory) {

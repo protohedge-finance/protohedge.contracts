@@ -105,15 +105,13 @@ contract AaveBorrowPositionManagerTest is Test {
     ); 
 
     address[] memory swapPath = new address[](2);
-    swapPath[0] = address(usdcToken);
     swapPath[1] = address(borrowToken);
+    swapPath[0] = address(usdcToken);
 
     vm.expectCall(
       address(mockAddress),
-      abi.encodeCall(IGmxRouter.swap, (swapPath, 3750, 0, address(aaveBorrowPositionManager)))
+      abi.encodeCall(IGmxRouter.swap, (swapPath, 3750, 0, protohedgeVaultAddress))
     ); 
-
-
 
     aaveBorrowPositionManager.buy(amountToBuy);
 

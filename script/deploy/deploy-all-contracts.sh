@@ -16,6 +16,7 @@ export POSITION_MANAGER=$(read_address ".positionManager")
 export GLP_MANAGER=$(read_address ".glpManager")
 export GLP_TOKEN=$(read_address ".glpToken")
 export POOL_STATE_HELPER=$(read_address ".poolStateHelper")
+export GMX_ROUTER=$(read_address ".gmxRouter") 
 export BTC=$(read_address ".btc")
 export ETH=$(read_address ".eth")
 export USDC=$(read_address ".usdc")
@@ -31,12 +32,14 @@ export AAVE_L2_POOL=$(read_address ".aaveL2Pool")
 export AAVE_L2_ENCODER=$(read_address ".aaveL2Encoder")
 export ETH_PRICE_FEED=$(read_address ".ethPriceFeed")
 
+
 export VERIFY=false
 export BTC_PERP_POOL_POSITION_MANAGER_NAME="BtcPerpPool"
 export ETH_PERP_POOL_POSITION_MANAGER_NAME="EthPerpPool"
 export AAVE_BORROW_BTC_POSITION_MANAGER_NAME="AaveBorrowBtc"
 export GLP_PERP_POOL_VAULT_NAME="GLP-PERP-POOL"
 export AAVE_BORROW_BTC_POSITION_MANAGER_DECIMALS=8
+export AAVE_BORROW_BTC_TARGET_LTV=60
 
 
 

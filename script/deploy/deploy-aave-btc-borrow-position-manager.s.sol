@@ -10,7 +10,7 @@ import {AaveBorrowPositionManager} from "src/AaveBorrowPositionManager.sol";
 import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Deployer} from "src/Deployer.sol";
 
-contract DeployAaveBorrowPositionManager is Script, Deployer {
+contract DeployAaveBtcBorrowPositionManager is Script, Deployer {
   function run() public returns (address) {
     vm.startBroadcast(); 
 
