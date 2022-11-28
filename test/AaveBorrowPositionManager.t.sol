@@ -15,107 +15,177 @@ import {IAaveL2Encoder} from "aave/IAaveL2Encoder.sol";
 import {PriceUtils} from "src/PriceUtils.sol";
 
 contract AaveBorrowPositionManagerTest is Test {
-  AaveBorrowPositionManager private aaveBorrowPositionManager;
-  address private mockAddress = address(0);
-  address private protohedgeVaultAddress = address(1);
+    using stdStorage for StdStorage;
+    StdStorage internal stdStore;
 
-  MintableToken private usdcToken;
-  MintableToken private borrowToken;
+    AaveBorrowPositionManager private aaveBorrowPositionManager;
+    address private mockAddress = address(0);
+    address private protohedgeVaultAddress = address(1);
+    uint256 targetLtv = 60;
 
-  function setUp() public {
-    usdcToken = new MintableToken("USDC", "USDC", 6);
-    borrowToken = new MintableToken("WBTC", "WBTC", 8);
-    usdcToken.mint(protohedgeVaultAddress, 1*10**6);
+    MintableToken private usdcToken;
+    MintableToken private borrowToken;
 
+    function setUp() public {
+        usdcToken = new MintableToken("USDC", "USDC", 6);
+        borrowToken = new MintableToken("WBTC", "WBTC", 8);
+        usdcToken.mint(protohedgeVaultAddress, 1 * 10**6);
 
+        vm.mockCall(
+            mockAddress,
+            abi.encodeCall(ProtohedgeVault.getAvailableLiquidity, ()),
+            abi.encode(1 * 10**6)
+        );
 
-    vm.mockCall(
-      mockAddress,
-      abi.encodeCall(ProtohedgeVault.getAvailableLiquidity, ()),
-      abi.encode(1*10**6)
-    );
+        vm.mockCall(
+            mockAddress,
+            abi.encodeWithSelector(IAaveL2Encoder.encodeSupplyParams.selector),
+            abi.encode(0x01)
+        );
 
-    vm.mockCall(
-      mockAddress,
-      abi.encodeWithSelector(IAaveL2Encoder.encodeSupplyParams.selector),
-      abi.encode(0x01)
-    );
+        vm.mockCall(
+            mockAddress,
+            abi.encodeWithSelector(IAaveL2Pool.supply.selector),
+            abi.encode()
+        );
 
-    vm.mockCall(
-      mockAddress,
-      abi.encodeWithSelector(IAaveL2Pool.supply.selector),
-      abi.encode()
-    );
+        vm.mockCall(
+            mockAddress,
+            abi.encodeWithSelector(IAaveL2Encoder.encodeBorrowParams.selector),
+            abi.encode(0x02)
+        );
 
-    vm.mockCall(
-      mockAddress,
-      abi.encodeWithSelector(IAaveL2Encoder.encodeBorrowParams.selector),
-      abi.encode(0x02)
-    );
+        vm.mockCall(
+            mockAddress,
+            abi.encodeWithSelector(IAaveL2Pool.borrow.selector),
+            abi.encode()
+        );
 
-    vm.mockCall(
-      mockAddress,
-      abi.encodeWithSelector(IAaveL2Pool.borrow.selector),
-      abi.encode()
-    );
+        vm.mockCall(
+            mockAddress,
+            abi.encodeWithSelector(IGmxRouter.swap.selector),
+            abi.encode()
+        );
 
-    vm.mockCall(
-      mockAddress,
-      abi.encodeWithSelector(IGmxRouter.swap.selector),
-      abi.encode()
-    );
+        vm.mockCall(
+            mockAddress,
+            abi.encodeWithSelector(PriceUtils.getTokenPrice.selector),
+            abi.encode(16000 * (1 * 10**8))
+        );
 
-    vm.mockCall(
-      mockAddress,
-      abi.encodeWithSelector(PriceUtils.getTokenPrice.selector),
-      abi.encode(16000*(1*10**8))
-    );
+        vm.mockCall(
+            mockAddress,
+            abi.encodeWithSelector(IAaveL2Encoder.encodeRepayParams.selector),
+            abi.encode(0x03)
+        );
 
-    aaveBorrowPositionManager = new AaveBorrowPositionManager();
+        vm.mockCall(
+          mockAddress,
+          abi.encodeWithSelector(IAaveL2Pool.repay.selector),
+          abi.encode(1)
+        );
 
-    aaveBorrowPositionManager.initialize(
-      "TestPositionManager",
-      8,
-      60,
-      mockAddress,
-      mockAddress,
-      mockAddress,
-      address(usdcToken),
-      address(borrowToken),
-      protohedgeVaultAddress,
-      mockAddress,
-      mockAddress
-    );
+        vm.mockCall(
+          protohedgeVaultAddress,
+          abi.encodeWithSelector(ProtohedgeVault.getAvailableLiquidity.selector),
+          abi.encode(2*10**6)
+        );
 
-    vm.prank(protohedgeVaultAddress); 
-    usdcToken.approve(address(aaveBorrowPositionManager), 1*10**6);
-  }
+        aaveBorrowPositionManager = new AaveBorrowPositionManager();
 
-  function testBuy() public {
-    uint256 amountToBuy = 1*10**6;
+        aaveBorrowPositionManager.initialize(
+            "TestPositionManager",
+            8,
+            targetLtv,
+            mockAddress,
+            mockAddress,
+            mockAddress,
+            address(usdcToken),
+            address(borrowToken),
+            protohedgeVaultAddress,
+            mockAddress,
+            mockAddress
+        );
 
-    vm.expectCall(
-      address(mockAddress),
-      abi.encodeCall(IAaveL2Encoder.encodeSupplyParams, (address(usdcToken), 1*10**6, 0))
-    ); 
+        vm.prank(protohedgeVaultAddress);
+        usdcToken.approve(address(aaveBorrowPositionManager), 1 * 10**6);
+    }
 
-    vm.expectCall(
-      address(mockAddress),
-      abi.encodeCall(IAaveL2Encoder.encodeBorrowParams, (address(borrowToken), 3750, 2, 0))
-    ); 
+    function testBuy() public {
+        uint256 amountToBuy = 1 * 10**6;
 
-    address[] memory swapPath = new address[](2);
-    swapPath[1] = address(borrowToken);
-    swapPath[0] = address(usdcToken);
+        vm.expectCall(
+            address(mockAddress),
+            abi.encodeCall(
+                IAaveL2Encoder.encodeSupplyParams,
+                (address(usdcToken), 1 * 10**6, 0)
+            )
+        );
 
-    vm.expectCall(
-      address(mockAddress),
-      abi.encodeCall(IGmxRouter.swap, (swapPath, 3750, 0, protohedgeVaultAddress))
-    ); 
+        vm.expectCall(
+            address(mockAddress),
+            abi.encodeCall(
+                IAaveL2Encoder.encodeBorrowParams,
+                (address(borrowToken), 3750, 2, 0)
+            )
+        );
 
-    aaveBorrowPositionManager.buy(amountToBuy);
+        address[] memory swapPath = new address[](2);
+        swapPath[0] = address(borrowToken);
+        swapPath[1] = address(usdcToken);
 
-    assertEq(aaveBorrowPositionManager.positionWorth(), 1600000);
-    assertEq(aaveBorrowPositionManager.costBasis(), 1600000);
-  }
+        vm.expectCall(
+            address(mockAddress),
+            abi.encodeCall(
+                IGmxRouter.swap,
+                (swapPath, 3750, 0, protohedgeVaultAddress)
+            )
+        );
+
+        aaveBorrowPositionManager.buy(amountToBuy);
+
+        assertEq(aaveBorrowPositionManager.positionWorth(), 1600000);
+        assertEq(aaveBorrowPositionManager.costBasis(), 1600000);
+    }
+
+    function testSell() public {
+        uint256 collateral = 1 * 10**6;
+
+        stdStore
+            .target(address(aaveBorrowPositionManager))
+            .sig(aaveBorrowPositionManager.collateral.selector)
+            .checked_write(collateral);
+
+        stdStore
+            .target(address(aaveBorrowPositionManager))
+            .sig(aaveBorrowPositionManager.usdcAmountBorrowed.selector)
+            .checked_write((collateral * targetLtv) / 100);
+
+        stdStore
+            .target(address(aaveBorrowPositionManager))
+            .sig(aaveBorrowPositionManager.amountOfTokens.selector)
+            .checked_write(3750);
+
+        address[] memory swapPath = new address[](2);
+        swapPath[0] = address(usdcToken);
+        swapPath[1] = address(borrowToken);
+
+        vm.expectCall(
+            address(mockAddress),
+            abi.encodeCall(
+                IGmxRouter.swap,
+                (swapPath, 303000, 1875, address(aaveBorrowPositionManager))
+            )
+        );
+
+        vm.expectCall(
+            address(mockAddress),
+            abi.encodeCall(
+                IAaveL2Encoder.encodeRepayParams,
+                (address(borrowToken), 1875, 0)
+            )
+        );
+
+        aaveBorrowPositionManager.sell(500000);
+    }
 }

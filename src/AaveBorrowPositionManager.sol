@@ -12,6 +12,7 @@ import {PriceUtils} from "src/PriceUtils.sol";
 import {PositionType} from "src/PositionType.sol";
 import {IGmxRouter} from "gmx/IGmxRouter.sol";
 import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
+import "forge-std/Test.sol";
 
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
@@ -20,15 +21,15 @@ import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.s
 uint256 constant USDC_MULTIPLIER = 1*10**6; 
 uint256 constant PERCENTAGE_MULTIPLIER = 10000;
 
-contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgradeable, OwnableUpgradeable {
+contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgradeable, OwnableUpgradeable, Test {
   string private positionName;
-  uint256 private usdcAmountBorrowed;
+  uint256 public usdcAmountBorrowed;
   bool private _canRebalance;
   uint256 private decimals;
   address private tokenPriceFeedAddress;
   uint256 private targetLtv;
-  uint256 private amountOfTokens;
-  uint256 private collateral;
+  uint256 public amountOfTokens;
+  uint256 public collateral;
 
   IAaveL2Pool private l2Pool;
   IAaveL2Encoder private l2Encoder;
@@ -124,15 +125,16 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
     amountOfTokens += tokensToBorrow;
     usdcAmountBorrowed += usdcAmountToBorrow;
      
-    return 0;
+    return tokensToBorrow;
   }
 
   function sell(uint256 usdcAmount) override external returns (uint256) {
     require(collateral - usdcAmount >= 0, "Insufficient tokens to sell");
     uint256 desiredCollateral = collateral - usdcAmount;
-    uint256 desiredBorrowAmount = desiredCollateral * (targetLtv / 100);
+    uint256 desiredBorrowAmount = desiredCollateral * targetLtv / 100;
     uint256 usdcAmountToRepay = getLoanWorth() - desiredBorrowAmount;
     uint256 usdcAmountWithSlippage = usdcAmountToRepay + (usdcAmountToRepay / 100);
+    
     usdcToken.transferFrom(address(protohedgeVault), address(this), usdcAmountWithSlippage);
     uint256 tokenAmountToRepay = usdcAmountToRepay * (1*10**decimals) / price();
 
@@ -142,7 +144,6 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
     swapPath[1] = address(borrowToken);
 
     gmxRouter.swap(swapPath, usdcAmountWithSlippage, tokenAmountToRepay, address(this));
-
     bytes32 repayArgs = l2Encoder.encodeRepayParams(
       address(borrowToken),
       Math.min(tokenAmountToRepay, amountOfTokens),
@@ -150,6 +151,7 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
     );
 
     l2Pool.repay(repayArgs);
+    return tokenAmountToRepay;
   }
 
   function exposures() override external view returns (TokenExposure[] memory) {
