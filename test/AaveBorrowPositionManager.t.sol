@@ -104,6 +104,7 @@ contract AaveBorrowPositionManagerTest is Test {
             address(borrowToken),
             protohedgeVaultAddress,
             mockAddress,
+            mockAddress,
             mockAddress
         );
 

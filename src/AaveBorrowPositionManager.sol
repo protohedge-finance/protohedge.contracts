@@ -12,14 +12,14 @@ import {PriceUtils} from "src/PriceUtils.sol";
 import {PositionType} from "src/PositionType.sol";
 import {IGmxRouter} from "gmx/IGmxRouter.sol";
 import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
+import {USDC_MULTIPLIER,PERCENTAGE_MULTIPLIER,BASIS_POINTS_DIVISOR} from "src/Constants.sol";
+import {GlpUtils} from "src/GlpUtils.sol";
 import "forge-std/Test.sol";
 
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 
-uint256 constant USDC_MULTIPLIER = 1*10**6; 
-uint256 constant PERCENTAGE_MULTIPLIER = 10000;
 
 contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgradeable, OwnableUpgradeable, Test {
   string private positionName;
@@ -38,7 +38,8 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
   ProtohedgeVault private protohedgeVault;
   PriceUtils private priceUtils;
   IGmxRouter private gmxRouter;
-
+  GlpUtils private glpUtils;
+   
   function initialize(
     string memory _positionName,
     uint256 _decimals,
@@ -50,7 +51,8 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
     address _borrowTokenAddress,
     address _protohedgeVaultAddress,
     address _priceUtilsAddress,
-    address _gmxRouterAddress
+    address _gmxRouterAddress,
+    address _glpUtilsAddress
   ) public initializer {
     positionName = _positionName;
     decimals = _decimals;
@@ -65,10 +67,12 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
     protohedgeVault = ProtohedgeVault(_protohedgeVaultAddress);
     priceUtils = PriceUtils(_priceUtilsAddress);
     gmxRouter = IGmxRouter(_gmxRouterAddress);
+    glpUtils = GlpUtils(_glpUtilsAddress);
 
     usdcToken.approve(address(l2Pool), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
     usdcToken.approve(address(gmxRouter), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
     borrowToken.approve(address(gmxRouter), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
+    borrowToken.approve(address(l2Pool), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
 
     __Ownable_init();
   }
@@ -128,30 +132,32 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
     return tokensToBorrow;
   }
 
+  event logNumber(uint256 num);
+
   function sell(uint256 usdcAmount) override external returns (uint256) {
     require(collateral - usdcAmount >= 0, "Insufficient tokens to sell");
     uint256 desiredCollateral = collateral - usdcAmount;
     uint256 desiredBorrowAmount = desiredCollateral * targetLtv / 100;
     uint256 usdcAmountToRepay = getLoanWorth() - desiredBorrowAmount;
-    uint256 usdcAmountWithSlippage = usdcAmountToRepay + (usdcAmountToRepay / 100);
-    
+    uint256 feeBasisPoints = glpUtils.getFeeBasisPoints(address(usdcToken), address(borrowToken), usdcAmountToRepay);
+    uint256 usdcAmountWithSlippage = usdcAmountToRepay * (BASIS_POINTS_DIVISOR + feeBasisPoints) / BASIS_POINTS_DIVISOR;
     usdcToken.transferFrom(address(protohedgeVault), address(this), usdcAmountWithSlippage);
-    uint256 tokenAmountToRepay = usdcAmountToRepay * (1*10**decimals) / price();
-
     
     address[] memory swapPath = new address[](2);
     swapPath[0] = address(usdcToken);
     swapPath[1] = address(borrowToken);
 
-    gmxRouter.swap(swapPath, usdcAmountWithSlippage, tokenAmountToRepay, address(this));
+    uint256 amountOut = gmxRouter.swap(swapPath, usdcAmountWithSlippage, 0, address(this));
+    emit logNumber(Math.min(amountOut, amountOfTokens));
     bytes32 repayArgs = l2Encoder.encodeRepayParams(
       address(borrowToken),
-      Math.min(tokenAmountToRepay, amountOfTokens),
-      0
+      Math.min(amountOut, amountOfTokens),
+      2 // variable rate mode
     );
 
     l2Pool.repay(repayArgs);
-    return tokenAmountToRepay;
+
+    return amountOut;
   }
 
   function exposures() override external view returns (TokenExposure[] memory) {

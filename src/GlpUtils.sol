@@ -2,17 +2,23 @@
 pragma solidity ^0.8.13;
 
 import {IVaultReader} from "gmx/IVaultReader.sol";
+import {IVault} from "gmx/IVault.sol";
 import {TokenExposure} from "src/TokenExposure.sol";
 import {GlpTokenAllocation} from "src/GlpTokenAllocation.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {PositionType} from "src/PositionType.sol";
+import {PRICE_PRECISION,BASIS_POINTS_DIVISOR} from "src/Constants.sol";
+import {SafeMath} from "openzeppelin-contracts/contracts/utils/math/SafeMath.sol";
 
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 
 contract GlpUtils is Initializable, UUPSUpgradeable, OwnableUpgradeable {
+    using SafeMath for uint256;
+
     IVaultReader private vaultReader;
+    IVault private vault;
     address private vaultAddress;
     address private positionManagerAddress;
     address private wethAddress;
@@ -31,6 +37,7 @@ contract GlpUtils is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         vaultAddress = _vaultAddress;
         positionManagerAddress = _positionManagerAddress;
         wethAddress = _wethAddress;
+        vault = IVault(_vaultAddress);
 
         __Ownable_init();
     }
@@ -100,5 +107,41 @@ contract GlpUtils is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         }
 
         return tokenExposures;
+    }
+
+    function setVault(address _vaultAddress) external {
+        vault = IVault(_vaultAddress);
+        vaultAddress = _vaultAddress;
+    }
+
+    function getFeeBasisPoints(address tokenIn, address tokenOut, uint256 amountIn) public view returns (uint256) {
+        uint256 priceIn = vault.getMinPrice(tokenIn);
+
+        // adjust usdgAmounts by the same usdgAmount as debt is shifted between the assets
+        uint256 usdgAmount = amountIn.mul(priceIn).div(PRICE_PRECISION);
+        address usdg = vault.usdg();
+        usdgAmount = vault.adjustForDecimals(usdgAmount, tokenIn, usdg);
+
+        bool isStableSwap = vault.stableTokens(tokenIn) && vault.stableTokens(tokenOut);
+        uint256 feeBasisPoints;
+        {
+            uint256 baseBps = isStableSwap ? vault.stableSwapFeeBasisPoints() : vault.swapFeeBasisPoints();
+            uint256 taxBps = isStableSwap ? vault.stableTaxBasisPoints() : vault.taxBasisPoints();
+            uint256 feesBasisPoints0 = vault.getFeeBasisPoints(tokenIn, usdgAmount, baseBps, taxBps, true);
+            uint256 feesBasisPoints1 = vault.getFeeBasisPoints(tokenOut, usdgAmount, baseBps, taxBps, false);
+            // use the higher of the two fee basis points
+            feeBasisPoints = feesBasisPoints0 > feesBasisPoints1 ? feesBasisPoints0 : feesBasisPoints1;
+        }
+        return feeBasisPoints;
+    }
+
+    function getAmountInAfterFees(address tokenIn, address tokenOut, uint256 amountOut) public view returns (uint256) {
+        uint256 priceIn = vault.getMinPrice(tokenIn);
+        uint256 priceOut = vault.getMaxPrice(tokenOut);
+
+        uint256 amountIn = amountOut * priceOut / priceIn;
+        amountIn = vault.adjustForDecimals(amountIn, tokenIn, tokenOut);
+        uint256 feeBasisPoints = getFeeBasisPoints(tokenIn, tokenOut, amountIn);
+        return amountIn * (BASIS_POINTS_DIVISOR + feeBasisPoints) / BASIS_POINTS_DIVISOR;
     }
 }

@@ -30,7 +30,8 @@ contract DeployAaveBtcBorrowPositionManager is Script, Deployer {
       vm.envAddress("BTC"),
       vm.envAddress("GLP_PERP_POOL_VAULT"),
       vm.envAddress("PRICE_UTILS"),
-      vm.envAddress("GMX_ROUTER")
+      vm.envAddress("GMX_ROUTER"),
+      vm.envAddress("GLP_UTILS")
     );
 
     vm.setEnv("AAVE_BORROW_BTC_POSITION_MANAGER", toString(proxyAddress));
