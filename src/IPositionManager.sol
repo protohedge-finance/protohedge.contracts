@@ -52,7 +52,15 @@ abstract contract IPositionManager {
 
   function stats() external view returns (PositionManagerStats memory) {
     return PositionManagerStats({
-      name: this.name()
+      positionManagerAddress: address(this),
+      name: this.name(),
+      positionWorth: this.positionWorth(),
+      costBasis: this.costBasis(),
+      pnl: this.pnl(),
+      tokenExposures: this.exposures(),
+      tokenAllocations: this.allocation(),
+      price: this.price(),
+      canRebalance: this.canRebalance()
     });    
   }
 }

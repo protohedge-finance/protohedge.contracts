@@ -20,6 +20,7 @@ export AAVE_BORROW_BTC_POSITION_MANAGER_NAME="AaveBorrowBtc"
 export GLP_PERP_POOL_VAULT=$(read_address ".glpPerpPoolVault")
 export AAVE_BORROW_BTC_POSITION_MANAGER_DECIMALS=8
 export AAVE_BORROW_BTC_TARGET_LTV=60
+export GLP_UTILS=$(read_address ".glpUtils")
 
 forge script DeployAaveBtcBorrowPositionManager \
 	--broadcast \

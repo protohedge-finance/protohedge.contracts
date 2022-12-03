@@ -14,6 +14,7 @@ import {IGmxRouter} from "gmx/IGmxRouter.sol";
 import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {USDC_MULTIPLIER,PERCENTAGE_MULTIPLIER,BASIS_POINTS_DIVISOR} from "src/Constants.sol";
 import {GlpUtils} from "src/GlpUtils.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
 import "forge-std/Test.sol";
 
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
@@ -21,7 +22,7 @@ import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable
 import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 
 
-contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgradeable, OwnableUpgradeable, Test {
+contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgradeable, OwnableUpgradeable {
   string private positionName;
   uint256 public usdcAmountBorrowed;
   bool private _canRebalance;
@@ -123,7 +124,8 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
     address[] memory swapPath = new address[](2);
     swapPath[0] = address(borrowToken);
     swapPath[1] = address(usdcToken);
-   
+
+       
     gmxRouter.swap(swapPath, tokensToBorrow, 0, address(protohedgeVault));
 
     amountOfTokens += tokensToBorrow;
@@ -131,8 +133,6 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
      
     return tokensToBorrow;
   }
-
-  event logNumber(uint256 num);
 
   function sell(uint256 usdcAmount) override external returns (uint256) {
     require(collateral - usdcAmount >= 0, "Insufficient tokens to sell");
@@ -147,17 +147,18 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
     swapPath[0] = address(usdcToken);
     swapPath[1] = address(borrowToken);
 
-    uint256 amountOut = gmxRouter.swap(swapPath, usdcAmountWithSlippage, 0, address(this));
-    emit logNumber(Math.min(amountOut, amountOfTokens));
+    uint256 amountBefore = borrowToken.balanceOf(address(this));
+    gmxRouter.swap(swapPath, usdcAmountWithSlippage, 0, address(this));
+    uint256 amountSwapped = Math.min(borrowToken.balanceOf(address(this)) - amountBefore, amountOfTokens);
     bytes32 repayArgs = l2Encoder.encodeRepayParams(
       address(borrowToken),
-      Math.min(amountOut, amountOfTokens),
+      amountSwapped,
       2 // variable rate mode
     );
 
     l2Pool.repay(repayArgs);
 
-    return amountOut;
+    return amountSwapped;
   }
 
   function exposures() override external view returns (TokenExposure[] memory) {
@@ -196,7 +197,9 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
   }
 
   function getLoanToValue() public view returns (uint256) {
-    return getLoanWorth() * PERCENTAGE_MULTIPLIER / collateral;
+    return collateral > 0
+      ? getLoanWorth() * PERCENTAGE_MULTIPLIER / collateral
+      : 0;
   }
 
   function getLoanWorth() public view returns (uint256) {

@@ -29,5 +29,5 @@
   "btcPerpPoolPositionManager": "0x933A2340e7D861161AFa255c53B2D7eE7c3C9407",
   "ethPerpPoolPositionManager": "0x84Cf5F8E2b38dde753E93751dC690D6B4180DA53",
   "glpPositionManager": "0xD991FcD34A67B28d7AFcD1e9FB496dd0a5b62c7b",
-  "aaveBtcBorrowPositionManager": "0x35e46ed37faea141e2eb6742bc65d7dd72b0dc19"
+  "aaveBtcBorrowPositionManager": "0xa6e319DcAbe10CE85AfDEd5B83D31E756a8ba8cA"
 }
