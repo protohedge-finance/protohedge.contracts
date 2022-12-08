@@ -1,1 +1,1 @@
-anvil --steps-tracing --fork-url=https://arb1.arbitrum.io/rpc --balance=10000000000000000000
+anvil --steps-tracing --fork-url=https://arb1.arbitrum.io/rpc

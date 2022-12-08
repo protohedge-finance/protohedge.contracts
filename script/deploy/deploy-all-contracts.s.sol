@@ -15,6 +15,7 @@ import {DeployBtcPerpPoolPositionManager} from "script/deploy/deploy-btc-perp-po
 import {DeployEthPerpPoolPositionManager} from "script/deploy/deploy-eth-perp-pool-position-manager.s.sol";
 import {DeployGlpPositionManager} from "script/deploy/deploy-glp-position-manager.s.sol";
 import {DeployAaveBtcBorrowPositionManager} from "script/deploy/deploy-aave-btc-borrow-position-manager.s.sol";
+import {DeployAaveEthBorrowPositionManager} from "script/deploy/deploy-aave-eth-borrow-position-manager.s.sol";
 import {GlpPositionManager} from "src/GlpPositionManager.sol";
 import {ProtohedgeVault} from "src/ProtohedgeVault.sol";
 import {AaveBorrowPositionManager} from "src/AaveBorrowPositionManager.sol";
@@ -25,31 +26,26 @@ contract DeployAllContracts is Script, Test {
   using stdStorage for StdStorage;
 
   function run() public {
-    DeployPriceUtils deployPriceUtils = new DeployPriceUtils();    
-    DeployGlpUtils deployGlpUtils = new DeployGlpUtils();
-    DeployPerpPoolUtils deployPerpPoolUtils = new DeployPerpPoolUtils();
+    address priceUtilsAddress = new DeployPriceUtils().run();    
+    address glpUtilsAddress = new DeployGlpUtils().run();
+    address perpPoolUtilsAddress = new DeployPerpPoolUtils().run();
     DeployGlpPerpPoolVault deployGlpPerpPoolVault = new DeployGlpPerpPoolVault();
-    DeployBtcPerpPoolPositionManager deployBtcPerpPoolPositionManager = new DeployBtcPerpPoolPositionManager();
-    DeployEthPerpPoolPositionManager deployEthPerpPoolPositionManager = new DeployEthPerpPoolPositionManager();
-    DeployGlpPositionManager deployGlpPositionManager = new DeployGlpPositionManager();
-    DeployAaveBtcBorrowPositionManager deployAaveBorrowBtcPositionManager = new DeployAaveBtcBorrowPositionManager();
-
-    address priceUtilsAddress = deployPriceUtils.run();
-    address glpUtilsAddress = deployGlpUtils.run();
-    address perpPoolUtilsAddress = deployPerpPoolUtils.run(); 
-    (address glpPerpPoolVaultProxy, address glpPerpPoolVaultImplementation) = deployGlpPerpPoolVault.run();
-    address btcPerpPoolPositionManagerAddress = deployBtcPerpPoolPositionManager.run();
-    address ethPerpPoolPositionManagerAddress = deployEthPerpPoolPositionManager.run();
+    address glpPerpPoolVaultAddress = deployGlpPerpPoolVault.run(); 
+    address btcPerpPoolPositionManagerAddress = new DeployBtcPerpPoolPositionManager().run();
+    address ethPerpPoolPositionManagerAddress = new DeployEthPerpPoolPositionManager().run();
+    address aaveBorrowBtcPositionManagerAddress = new DeployAaveBtcBorrowPositionManager().run();
+    address aaveBorrowEthPositionManagerAddress = new DeployAaveEthBorrowPositionManager().run();
+    DeployGlpPositionManager deployGlpPositionManager  = new DeployGlpPositionManager();
     address glpPositionManagerAddress = deployGlpPositionManager.run();
-    address aaveBorrowBtcPositionManagerAddress = deployAaveBorrowBtcPositionManager.run();
-
+   
     deployGlpPositionManager.setGlpTokens(glpPositionManagerAddress);
 
-    IPositionManager[] memory glpPerpPoolPositionManagers = new IPositionManager[](2);
+    IPositionManager[] memory glpPerpPoolPositionManagers = new IPositionManager[](3);
     glpPerpPoolPositionManagers[0] = IPositionManager(glpPositionManagerAddress);
     glpPerpPoolPositionManagers[1] = IPositionManager(aaveBorrowBtcPositionManagerAddress);
+    glpPerpPoolPositionManagers[2] = IPositionManager(aaveBorrowEthPositionManagerAddress);
 
-    deployGlpPerpPoolVault.setPositionManagers(glpPerpPoolVaultProxy, glpPerpPoolPositionManagers);
+    deployGlpPerpPoolVault.setPositionManagers(glpPerpPoolVaultAddress, glpPerpPoolPositionManagers);
 
     vm.stopBroadcast();
      
@@ -57,12 +53,12 @@ contract DeployAllContracts is Script, Test {
     emit log_named_address("GlpUtils is: ", glpUtilsAddress);
     emit log_named_address("PerpPoolUtils is: ", perpPoolUtilsAddress);
 
-    emit log_named_address("GlpPerpPoolVault proxy: ", glpPerpPoolVaultProxy);
-    emit log_named_address("GlpPerpPoolVault implementation: ", glpPerpPoolVaultImplementation);
+    emit log_named_address("GlpPerpPoolVault is: ", glpPerpPoolVaultAddress);
     
     emit log_named_address("BtcPerpPoolPositionManager is: ", btcPerpPoolPositionManagerAddress);
     emit log_named_address("EthPerpPoolPositionManager is: ", ethPerpPoolPositionManagerAddress);
     emit log_named_address("GlpPositionManager is: ", glpPositionManagerAddress);
     emit log_named_address("AaveBorrowBtcPositionManager is: ", aaveBorrowBtcPositionManagerAddress);
+    emit log_named_address("AaveBorrowEthPositionManager is: ", aaveBorrowEthPositionManagerAddress);
   } 
 }

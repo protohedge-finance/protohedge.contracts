@@ -14,4 +14,5 @@ struct PositionManagerStats {
     TokenAllocation[] tokenAllocations;
     uint256 price;
     bool canRebalance;
+    uint256 collateralRatio;
 }

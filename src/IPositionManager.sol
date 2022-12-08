@@ -8,13 +8,12 @@ import {PositionManagerStats} from "src/PositionManagerStats.sol";
 
 abstract contract IPositionManager {
   uint256 public id;
-
   function name() virtual external view returns (string memory);
   function positionWorth() virtual external view returns (uint256);
   function costBasis() virtual external view returns (uint256);
   function pnl() virtual external view returns (int256);
   function exposures() virtual external view returns (TokenExposure[] memory);
-  function allocation() virtual external view returns (TokenAllocation[] memory );
+  function allocations() virtual external view returns (TokenAllocation[] memory );
   function buy(uint256) virtual external returns (uint256);
   function sell(uint256) virtual external returns (uint256);
   function price() virtual external view returns (uint256);
@@ -33,7 +32,7 @@ abstract contract IPositionManager {
   }
 
   function allocationByToken(address tokenAddress) external view returns (TokenAllocation memory) {
-    TokenAllocation[] memory tokenAllocations = this.allocation();
+    TokenAllocation[] memory tokenAllocations = this.allocations();
     for (uint256 i = 0; i < tokenAllocations.length; i++) {
         if (tokenAllocations[i].tokenAddress == tokenAddress) {
           return tokenAllocations[i];
@@ -58,9 +57,12 @@ abstract contract IPositionManager {
       costBasis: this.costBasis(),
       pnl: this.pnl(),
       tokenExposures: this.exposures(),
-      tokenAllocations: this.allocation(),
+      tokenAllocations: this.allocations(),
       price: this.price(),
-      canRebalance: this.canRebalance()
-    });    
+      canRebalance: this.canRebalance(),
+      collateralRatio: this.collateralRatio()
+    });
   }
+
+  function collateralRatio() virtual external view returns (uint256);
 }

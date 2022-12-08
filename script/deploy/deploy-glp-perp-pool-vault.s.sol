@@ -10,7 +10,7 @@ import {Deployer} from "src/Deployer.sol";
 import {IPositionManager} from "src/IPositionManager.sol";
 
 contract DeployGlpPerpPoolVault is Script, Deployer {
-  function run() public returns (address, address) {
+  function run() public returns (address) {
     vm.startBroadcast();
     ProtohedgeVault implementation = new ProtohedgeVault();
     ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
@@ -25,7 +25,7 @@ contract DeployGlpPerpPoolVault is Script, Deployer {
     vm.setEnv("GLP_PERP_POOL_VAULT", toString(proxyAddress));
     vm.stopBroadcast();
 
-    return (proxyAddress, address(implementation));
+    return (proxyAddress);
   }
 
   function setPositionManagers(address glpPerpPoolVaultAddress, IPositionManager[] memory glpPerpPoolPositionManagers) external {

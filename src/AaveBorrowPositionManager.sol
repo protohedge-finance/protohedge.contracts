@@ -97,20 +97,22 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
   }
 
   function buy(uint256 usdcAmount) override external returns (uint256) {
-    require(protohedgeVault.getAvailableLiquidity() >= usdcAmount, "Insufficient liquidity");
-    usdcToken.transferFrom(address(protohedgeVault), address(this), usdcAmount);
+    uint256 ratio = collateralRatio();
+    uint256 desiredCollateral = usdcAmount * ratio / BASIS_POINTS_DIVISOR;
+    
+    require(protohedgeVault.getAvailableLiquidity() >= desiredCollateral, "Insufficient liquidity");
+    usdcToken.transferFrom(address(protohedgeVault), address(this), desiredCollateral);
 
     bytes32 supplyArgs = l2Encoder.encodeSupplyParams(
       address(usdcToken),
-      usdcAmount,
-      0
+      desiredCollateral,
+      0 
     );
 
     l2Pool.supply(supplyArgs);
 
-    collateral += usdcAmount;
-    uint256 usdcAmountToBorrow = usdcAmount * targetLtv / 100;
-    uint256 tokensToBorrow = usdcAmountToBorrow * (1*10**decimals) / price();
+    collateral += desiredCollateral;
+    uint256 tokensToBorrow = usdcAmount * (1*10**decimals) / price();
 
     bytes32 borrowArgs = l2Encoder.encodeBorrowParams(
       address(borrowToken),
@@ -129,16 +131,15 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
     gmxRouter.swap(swapPath, tokensToBorrow, 0, address(protohedgeVault));
 
     amountOfTokens += tokensToBorrow;
-    usdcAmountBorrowed += usdcAmountToBorrow;
+    usdcAmountBorrowed += usdcAmount;
      
     return tokensToBorrow;
   }
 
   function sell(uint256 usdcAmount) override external returns (uint256) {
-    require(collateral - usdcAmount >= 0, "Insufficient tokens to sell");
-    uint256 desiredCollateral = collateral - usdcAmount;
-    uint256 desiredBorrowAmount = desiredCollateral * targetLtv / 100;
-    uint256 usdcAmountToRepay = getLoanWorth() - desiredBorrowAmount;
+    uint256 loanWorth = getLoanWorth();
+    require(usdcAmount >= loanWorth, "Insufficient tokens to sell");
+    uint256 usdcAmountToRepay = getLoanWorth() - usdcAmount;
     uint256 feeBasisPoints = glpUtils.getFeeBasisPoints(address(usdcToken), address(borrowToken), usdcAmountToRepay);
     uint256 usdcAmountWithSlippage = usdcAmountToRepay * (BASIS_POINTS_DIVISOR + feeBasisPoints) / BASIS_POINTS_DIVISOR;
     usdcToken.transferFrom(address(protohedgeVault), address(this), usdcAmountWithSlippage);
@@ -164,21 +165,21 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
   function exposures() override external view returns (TokenExposure[] memory) {
     TokenExposure[] memory tokenExposures = new TokenExposure[](1);
     tokenExposures[0] = TokenExposure({
-      amount: int256(positionWorth()),
+      amount: -1 * int256(getLoanWorth()),
       token: address(borrowToken),
       symbol: borrowToken.symbol()
     });
     return tokenExposures;
   }
 
-  function allocation() override external view returns (TokenAllocation[] memory) {
+  function allocations() override external view returns (TokenAllocation[] memory) {
     TokenAllocation[] memory tokenAllocations = new TokenAllocation[](1);
     tokenAllocations[0] = TokenAllocation({
       tokenAddress: address(borrowToken),
       symbol: borrowToken.symbol(),
-      percentage: getLoanToValue(),
+      percentage: BASIS_POINTS_DIVISOR,
       leverage: 1,
-      positionType: PositionType.Short 
+      positionType: PositionType.Short
     });
     return tokenAllocations;
   }
@@ -204,5 +205,9 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
 
   function getLoanWorth() public view returns (uint256) {
     return amountOfTokens * price() / (1*10**decimals);
+  }
+
+  function collateralRatio() override public view returns (uint256) {
+    return 100 * BASIS_POINTS_DIVISOR / targetLtv;
   }
 }

@@ -11,6 +11,7 @@ import {PerpPoolUtils} from "src/PerpPoolUtils.sol";
 import {TokenAllocation} from "src/TokenAllocation.sol";
 import {PositionType} from "src/PositionType.sol";
 import {ProtohedgeVault} from "src/ProtohedgeVault.sol";
+import {BASIS_POINTS_DIVISOR} from "src/Constants.sol";
 
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
@@ -108,14 +109,14 @@ contract PerpPoolPositionManager is IPositionManager, Initializable, UUPSUpgrade
     return tokenExposures;
   }
 
-  function allocation() override external view returns (TokenAllocation[] memory) {
+  function allocations() override external view returns (TokenAllocation[] memory) {
     TokenAllocation[] memory tokenAllocations = new TokenAllocation[](1);
     tokenAllocations[0] = TokenAllocation({
       tokenAddress: address(trackingToken),
       symbol: trackingToken.symbol(),
-      percentage: 10000,
+      percentage: BASIS_POINTS_DIVISOR,
       leverage: 3,
-      positionType: PositionType.Short 
+      positionType: PositionType.Short
     });
     return tokenAllocations;
   }
@@ -138,5 +139,9 @@ contract PerpPoolPositionManager is IPositionManager, Initializable, UUPSUpgrade
 
   function canRebalance() override external view returns (bool) {
     return _canRebalance;
+  }
+
+  function collateralRatio() override external pure returns (uint256) {
+    return BASIS_POINTS_DIVISOR;
   }
 }

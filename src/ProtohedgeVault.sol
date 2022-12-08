@@ -75,16 +75,16 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   }
 
   function rebalance(RebalanceQueueData[] memory rebalanceQueueData) external {
-    uint256 initGas = gasleft();
+    // uint256 initGas = gasleft();
     for (uint8 i = 0; i < rebalanceQueueData.length; i++) {
-      if (!rebalanceQueueData[i].positionManager.canRebalance()) {
-        revert("Position manager cannot rebalance");
-      }
+      // if (!rebalanceQueueData[i].positionManager.canRebalance()) {
+      //   revert("Position manager cannot rebalance");
+      // }
       rebalanceQueueData[i].positionManager.rebalance(rebalanceQueueData[i].usdcAmountToHave);
     }
 
-    uint256 gasCost = estimateGasCost(initGas);
-    gasCostPayed += gasCost;
+    // uint256 gasCost = estimateGasCost(initGas);
+    // gasCostPayed += gasCost;
   }
 
   function stats() public view returns (VaultStats memory) {

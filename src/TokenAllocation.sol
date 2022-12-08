@@ -12,3 +12,4 @@ struct TokenAllocation {
   uint256 leverage;
   PositionType positionType;
 }
+

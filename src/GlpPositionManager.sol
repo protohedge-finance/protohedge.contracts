@@ -16,6 +16,8 @@ import {IRewardRouter} from "gmx/IRewardRouter.sol";
 import {IGlpManager} from "gmx/IGlpManager.sol";
 import {ProtohedgeVault} from "src/ProtohedgeVault.sol";
 import {PositionType} from "src/PositionType.sol";
+import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
+import {BASIS_POINTS_DIVISOR} from "src/Constants.sol";
 
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
@@ -25,8 +27,6 @@ import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.s
 contract GlpPositionManager is IPositionManager, Initializable, UUPSUpgradeable, OwnableUpgradeable {
   uint256 private constant USDC_MULTIPLIER = 1*10**6;
   uint256 private constant GLP_MULTIPLIER = 1*10**18;
-  uint256 private constant PERCENT_DIVISOR = 1000;
-  uint256 private constant BASIS_POINTS_DIVISOR = 10000;
   uint256 private constant DEFAULT_SLIPPAGE = 30;
   uint256 private constant PRICE_PRECISION = 10 ** 30;
   uint256 private constant ETH_PRICE_DIVISOR = 1*10**20;
@@ -88,7 +88,7 @@ contract GlpPositionManager is IPositionManager, Initializable, UUPSUpgradeable,
 
   function buy(uint256 usdcAmount) override external returns (uint256) {
     uint256 currentPrice = priceUtils.glpPrice();
-    uint256 glpToPurchase = usdcAmount * currentPrice / USDC_MULTIPLIER;
+    uint256 glpToPurchase = usdcAmount * currentPrice / usdcToken.decimals();
     usdcToken.transferFrom(address(protohedgeVault), address(this), usdcAmount);
 
     uint256 glpAmountAfterSlippage = glpToPurchase * (BASIS_POINTS_DIVISOR - DEFAULT_SLIPPAGE) / BASIS_POINTS_DIVISOR;
@@ -105,7 +105,7 @@ contract GlpPositionManager is IPositionManager, Initializable, UUPSUpgradeable,
 
   function sell(uint256 usdcAmount) override external returns (uint256) {
     uint256 currentPrice = priceUtils.glpPrice();
-    uint256 glpToSell = usdcAmount * currentPrice * USDC_MULTIPLIER;
+    uint256 glpToSell = Math.min(usdcAmount * currentPrice * usdcToken.decimals(), tokenAmount);
     uint256 usdcRetrieved = rewardRouter.unstakeAndRedeemGlp(address(usdcToken), glpToSell, 0, address(protohedgeVault));
      _costBasis -= usdcRetrieved;
     tokenAmount -= glpToSell;
@@ -120,7 +120,7 @@ contract GlpPositionManager is IPositionManager, Initializable, UUPSUpgradeable,
     return glpUtils.getGlpTokenExposure(positionWorth(), glpTokens);
   }
 
-  function allocation() override external view returns (TokenAllocation[] memory) {
+  function allocations() override external view returns (TokenAllocation[] memory) {
     GlpTokenAllocation[] memory glpAllocations = glpUtils.getGlpTokenAllocations(glpTokens);
     TokenAllocation[] memory tokenAllocations = new TokenAllocation[](glpAllocations.length);
 
@@ -158,5 +158,9 @@ contract GlpPositionManager is IPositionManager, Initializable, UUPSUpgradeable,
 
     _costBasis += uint256(usdcAmount);
     tokenAmount += glpAmount;  
+  }
+
+  function collateralRatio() override external pure returns (uint256) {
+    return BASIS_POINTS_DIVISOR;
   }
 }
