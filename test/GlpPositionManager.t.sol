@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import {GlpPositionManager} from "src/GlpPositionManager.sol";
+import {IGlpManager} from "gmx/IGlpManager.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {IRewardRouter} from "gmx/IRewardRouter.sol";
 import {PriceUtils} from "src/PriceUtils.sol";
@@ -14,6 +15,17 @@ contract GlpPositionManagerTest is Test {
 
   function setUp() public {
     glpPositionManager = new GlpPositionManager();
+
+    glpPositionManager.initialize(
+        mockAddress,
+        mockAddress,
+        mockAddress,
+        mockAddress,
+        mockAddress,
+        mockAddress,
+        mockAddress,
+        mockAddress
+    );
 
     vm.mockCall(
         mockAddress,

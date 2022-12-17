@@ -6,9 +6,10 @@ import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 
-import {AaveBorrowPositionManager} from "src/AaveBorrowPositionManager.sol";
+import {AaveBorrowPositionManager,InitializeArgs} from "src/AaveBorrowPositionManager.sol";
 import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Deployer} from "src/Deployer.sol";
+
 
 contract DeployAaveBtcBorrowPositionManager is Script, Deployer {
   function run() public returns (address) {
@@ -19,20 +20,23 @@ contract DeployAaveBtcBorrowPositionManager is Script, Deployer {
     address proxyAddress = address(proxy);
     AaveBorrowPositionManager wrapped = AaveBorrowPositionManager(proxyAddress);
 
-    wrapped.initialize(
-      vm.envString("AAVE_BORROW_BTC_POSITION_MANAGER_NAME"),
-      vm.envUint("AAVE_BORROW_BTC_POSITION_MANAGER_DECIMALS"),
-      vm.envUint("AAVE_BORROW_BTC_TARGET_LTV"),
-      vm.envAddress("BTC_PRICE_FEED"),
-      vm.envAddress("AAVE_L2_POOL"),
-      vm.envAddress("AAVE_L2_ENCODER"),
-      vm.envAddress("USDC"),
-      vm.envAddress("BTC"),
-      vm.envAddress("GLP_PERP_POOL_VAULT"),
-      vm.envAddress("PRICE_UTILS"),
-      vm.envAddress("GMX_ROUTER"),
-      vm.envAddress("GLP_UTILS")
-    );
+    InitializeArgs memory args = InitializeArgs({
+      positionName: vm.envString("AAVE_BORROW_BTC_POSITION_MANAGER_NAME"),
+      decimals: vm.envUint("AAVE_BORROW_BTC_POSITION_MANAGER_DECIMALS"),
+      targetLtv: vm.envUint("AAVE_BORROW_BTC_TARGET_LTV"),
+      tokenPriceFeedAddress: vm.envAddress("BTC_PRICE_FEED"),
+      aaveL2PoolAddress: vm.envAddress("AAVE_L2_POOL"),
+      aaveL2EncoderAddress: vm.envAddress("AAVE_L2_ENCODER"),
+      usdcAddress: vm.envAddress("USDC"),
+      borrowTokenAddress: vm.envAddress("BTC"),
+      protohedgeVaultAddress: vm.envAddress("GLP_AAVE_BORROW_VAULT"),
+      priceUtilsAddress: vm.envAddress("PRICE_UTILS"),
+      gmxRouterAddress: vm.envAddress("GMX_ROUTER"),
+      glpUtilsAddress: vm.envAddress("GLP_UTILS"),
+      aaveProtocolDataProviderAddress: vm.envAddress("AAVE_PROTOCOL_DATA_PROVIDER")
+    });
+
+    wrapped.initialize(args);
 
     vm.setEnv("AAVE_BORROW_BTC_POSITION_MANAGER", toString(proxyAddress));
     vm.stopBroadcast();

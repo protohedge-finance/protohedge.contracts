@@ -9,12 +9,12 @@ import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC19
 import {Deployer} from "src/Deployer.sol";
 import {IPositionManager} from "src/IPositionManager.sol";
 
-contract UpdateGlpPerpPoolVault is Script, Test, Deployer {
+contract UpdateGlpAaveBorrowVault is Script, Test, Deployer {
   
   function run() public returns (address) {
     vm.startBroadcast();
 
-    address perpPoolsVaultAddress = vm.envAddress("GLP_PERP_POOL_VAULT");
+    address perpPoolsVaultAddress = vm.envAddress("GLP_AAVE_BORROW_VAULT");
 
     ProtohedgeVault perpPoolsVault = ProtohedgeVault(perpPoolsVaultAddress);
     ProtohedgeVault implementation = new ProtohedgeVault();

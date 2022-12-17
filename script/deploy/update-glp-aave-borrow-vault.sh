@@ -1,8 +1,8 @@
 #!/bin/bash
 
-export $(cat ../../.env | xargs)
+export $(cat ../../../.env | xargs)
 
-deps=$(cat ../../config/addresses.arbitrum.json)
+deps=$(cat ../../../config/addresses.arbitrum.json)
 
 read_address () {
     echo $deps | jq $1 | tr -d '"'

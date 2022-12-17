@@ -1,3 +1,3 @@
 #!/bin/bash
 
-forge script DeployGlpPerpPoolVault --json | tail -1
+forge script DeployGlpAaveBorrowVault --json | tail -1

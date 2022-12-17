@@ -33,7 +33,7 @@ contract PerpPoolPositionManager is IPositionManager, Initializable, UUPSUpgrade
   uint256 private lastIntervalId;
   bool private _canRebalance;
 
-	function initialize(
+  function initialize(
     string memory _positionName,
     address _poolTokenAddress,
     address _priceUtilsAddress,
@@ -130,14 +130,14 @@ contract PerpPoolPositionManager is IPositionManager, Initializable, UUPSUpgrade
     poolCommitter.claim(address(this));
     uint256 amountOfClaimedTokensAfter = poolToken.balanceOf(address(this));
 
-    if (amountOfClaimedTokensAfter > amountOfClaimedTokens && !this.canRebalance()) {
+    if (amountOfClaimedTokensAfter > amountOfClaimedTokens) {
       _canRebalance = true; 
     }
   }
 
   function compound() override external {}
 
-  function canRebalance() override external view returns (bool) {
+  function canRebalance(uint256) override external view returns (bool) {
     return _canRebalance;
   }
 

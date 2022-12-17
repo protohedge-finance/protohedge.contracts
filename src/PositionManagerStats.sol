@@ -13,6 +13,8 @@ struct PositionManagerStats {
     TokenExposure[] tokenExposures;
     TokenAllocation[] tokenAllocations;
     uint256 price;
-    bool canRebalance;
     uint256 collateralRatio;
+    uint256 loanWorth;
+    uint256 liquidationLevel;
+    uint256 collateral;
 }

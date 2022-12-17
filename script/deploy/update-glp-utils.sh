@@ -1,17 +1,17 @@
 #!/bin/bash
 
-export $(cat ../../../.env | xargs)
+export $(cat ../../.env | xargs)
 
-deps=$(cat ../../../config/addresses.arbitrum.json)
+deps=$(cat ../../config/addresses.arbitrum.json)
 
 read_address () {
     echo $deps | jq $1 | tr -d '"'
 }
 
 export RPC_URL="https://arb1.arbitrum.io/rpc"
-export PRICE_UTILS=$(read_address ".priceUtils")
+export GLP_UTILS_ADDRESS=$(read_address ".glpUtils") 
 
-forge script DeployPerpPoolUtils \
+forge script UpdateGlpUtils \
 	--broadcast \
 	--private-key $PERSONAL_PRIVATE_KEY \
 	--verify \

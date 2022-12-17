@@ -9,7 +9,7 @@ import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC19
 import {Deployer} from "src/Deployer.sol";
 import {IPositionManager} from "src/IPositionManager.sol";
 
-contract DeployGlpPerpPoolVault is Script, Deployer {
+contract DeployGlpAaveBorrowVault is Script, Deployer {
   function run() public returns (address) {
     vm.startBroadcast();
     ProtohedgeVault implementation = new ProtohedgeVault();
@@ -18,21 +18,21 @@ contract DeployGlpPerpPoolVault is Script, Deployer {
     ProtohedgeVault wrapped = ProtohedgeVault(address(proxy));
 
     wrapped.initialize(
-      vm.envString("GLP_PERP_POOL_VAULT_NAME"),
+      vm.envString("GLP_AAVE_BORROW_VAULT_NAME"),
       vm.envAddress("USDC")
     );
 
-    vm.setEnv("GLP_PERP_POOL_VAULT", toString(proxyAddress));
+    vm.setEnv("GLP_AAVE_BORROW_VAULT", toString(proxyAddress));
     vm.stopBroadcast();
 
     return (proxyAddress);
   }
 
-  function setPositionManagers(address glpPerpPoolVaultAddress, IPositionManager[] memory glpPerpPoolPositionManagers) external {
+  function setPositionManagers(address glpAaveBorrowVaultAddress, IPositionManager[] memory glpAaveBorrowPositionManagers) external {
     vm.startBroadcast();
 
-    ProtohedgeVault glpPerpPoolsVault = ProtohedgeVault(glpPerpPoolVaultAddress);
-    glpPerpPoolsVault.setPositionManagers(glpPerpPoolPositionManagers);
+    ProtohedgeVault glpAaveBorrowVault = ProtohedgeVault(glpAaveBorrowVaultAddress);
+    glpAaveBorrowVault.setPositionManagers(glpAaveBorrowPositionManagers);
 
     vm.stopBroadcast();
   } 

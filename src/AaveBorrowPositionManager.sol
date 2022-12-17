@@ -15,12 +15,29 @@ import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {USDC_MULTIPLIER,PERCENTAGE_MULTIPLIER,BASIS_POINTS_DIVISOR} from "src/Constants.sol";
 import {GlpUtils} from "src/GlpUtils.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
+import {PositionManagerStats} from "src/PositionManagerStats.sol";
+import {IAaveProtocolDataProvider} from "aave/IAaveProtocolDataProvider.sol";
 import "forge-std/Test.sol";
 
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 
+struct InitializeArgs {
+    string  positionName;
+    uint256 decimals;
+    uint256 targetLtv;
+    address tokenPriceFeedAddress;
+    address aaveL2PoolAddress;
+    address aaveL2EncoderAddress;
+    address usdcAddress;
+    address borrowTokenAddress;
+    address protohedgeVaultAddress;
+    address priceUtilsAddress;
+    address gmxRouterAddress;
+    address glpUtilsAddress;
+    address aaveProtocolDataProviderAddress;
+}
 
 contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgradeable, OwnableUpgradeable {
   string private positionName;
@@ -40,35 +57,24 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
   PriceUtils private priceUtils;
   IGmxRouter private gmxRouter;
   GlpUtils private glpUtils;
+  IAaveProtocolDataProvider private aaveProtocolDataProvider;
    
-  function initialize(
-    string memory _positionName,
-    uint256 _decimals,
-    uint256 _targetLtv,
-    address _tokenPriceFeedAddress,
-    address _aaveL2PoolAddress,
-    address _aaveL2EncoderAddress,
-    address _usdcAddress,
-    address _borrowTokenAddress,
-    address _protohedgeVaultAddress,
-    address _priceUtilsAddress,
-    address _gmxRouterAddress,
-    address _glpUtilsAddress
-  ) public initializer {
-    positionName = _positionName;
-    decimals = _decimals;
+  function initialize(InitializeArgs memory args) public initializer {
+    positionName = args.positionName;
+    decimals = args.decimals;
     _canRebalance = true;
-    tokenPriceFeedAddress = _tokenPriceFeedAddress;
-    targetLtv = _targetLtv;
+    tokenPriceFeedAddress = args.tokenPriceFeedAddress;
+    targetLtv = args.targetLtv;
 
-    l2Pool = IAaveL2Pool(_aaveL2PoolAddress);
-    l2Encoder = IAaveL2Encoder(_aaveL2EncoderAddress);
-    usdcToken = ERC20(_usdcAddress);
-    borrowToken = ERC20(_borrowTokenAddress);
-    protohedgeVault = ProtohedgeVault(_protohedgeVaultAddress);
-    priceUtils = PriceUtils(_priceUtilsAddress);
-    gmxRouter = IGmxRouter(_gmxRouterAddress);
-    glpUtils = GlpUtils(_glpUtilsAddress);
+    l2Pool = IAaveL2Pool(args.aaveL2PoolAddress);
+    l2Encoder = IAaveL2Encoder(args.aaveL2EncoderAddress);
+    usdcToken = ERC20(args.usdcAddress);
+    borrowToken = ERC20(args.borrowTokenAddress);
+    protohedgeVault = ProtohedgeVault(args.protohedgeVaultAddress);
+    priceUtils = PriceUtils(args.priceUtilsAddress);
+    gmxRouter = IGmxRouter(args.gmxRouterAddress);
+    glpUtils = GlpUtils(args.glpUtilsAddress);
+    aaveProtocolDataProvider = IAaveProtocolDataProvider(args.aaveProtocolDataProviderAddress);
 
     usdcToken.approve(address(l2Pool), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
     usdcToken.approve(address(gmxRouter), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
@@ -138,8 +144,7 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
 
   function sell(uint256 usdcAmount) override external returns (uint256) {
     uint256 loanWorth = getLoanWorth();
-    require(usdcAmount >= loanWorth, "Insufficient tokens to sell");
-    uint256 usdcAmountToRepay = getLoanWorth() - usdcAmount;
+    uint256 usdcAmountToRepay = Math.min(loanWorth, usdcAmount);
     uint256 feeBasisPoints = glpUtils.getFeeBasisPoints(address(usdcToken), address(borrowToken), usdcAmountToRepay);
     uint256 usdcAmountWithSlippage = usdcAmountToRepay * (BASIS_POINTS_DIVISOR + feeBasisPoints) / BASIS_POINTS_DIVISOR;
     usdcToken.transferFrom(address(protohedgeVault), address(this), usdcAmountWithSlippage);
@@ -193,7 +198,7 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
 
   function compound() override external {}
 
-  function canRebalance() override external view returns (bool) {
+  function canRebalance(uint256 amountOfUsdcToHave) override external view returns (bool) {
     return _canRebalance;
   }
 
@@ -207,7 +212,33 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
     return amountOfTokens * price() / (1*10**decimals);
   }
 
+  function getLiquidationThreshold() public view returns (uint256) {
+    (,,uint256 liquidationThreshold,,,,,,,) = aaveProtocolDataProvider.getReserveConfigurationData(address(borrowToken));
+    return liquidationThreshold;
+  }
+
+  function getLiquidationLevel() public view returns (uint256) {
+    return collateral * getLiquidationThreshold() / BASIS_POINTS_DIVISOR;
+  }
+
   function collateralRatio() override public view returns (uint256) {
     return 100 * BASIS_POINTS_DIVISOR / targetLtv;
+  }
+
+  function stats() override external view returns (PositionManagerStats memory) {
+    return PositionManagerStats({
+      positionManagerAddress: address(this),
+      name: this.name(),
+      positionWorth: this.positionWorth(),
+      costBasis: this.costBasis(),
+      pnl: this.pnl(),
+      tokenExposures: this.exposures(),
+      tokenAllocations: this.allocations(),
+      price: this.price(),
+      collateralRatio: this.collateralRatio(),
+      loanWorth: getLoanWorth(),
+      liquidationLevel: getLiquidationLevel(),
+      collateral: collateral
+    });
   }
 }

@@ -17,18 +17,28 @@ abstract contract IPositionManager {
   function buy(uint256) virtual external returns (uint256);
   function sell(uint256) virtual external returns (uint256);
   function price() virtual external view returns (uint256);
-  function canRebalance() virtual external view returns (bool);
+  function canRebalance(uint256) virtual external view returns (bool);
   function compound() virtual external;
   function rebalance(uint256 usdcAmountToHave) virtual external returns (bool) {
-    RebalanceAction rebalanceAction = this.getRebalanceAction(usdcAmountToHave);
-    uint256 worth = this.positionWorth();
+    (RebalanceAction rebalanceAction, uint256 amountToBuyOrSell) = this.rebalanceInfo(usdcAmountToHave);
+
     if (rebalanceAction == RebalanceAction.Buy) {
-      this.buy(usdcAmountToHave - worth);
+      this.buy(amountToBuyOrSell);
     } else if (rebalanceAction == RebalanceAction.Sell) {
-      this.sell(worth - usdcAmountToHave);
+      this.sell(amountToBuyOrSell);
     }
 
     return true;
+  }
+
+  function rebalanceInfo(uint256 usdcAmountToHave) virtual public view returns (RebalanceAction, uint256 amountToBuyOrSell) {
+    RebalanceAction rebalanceAction = this.getRebalanceAction(usdcAmountToHave);
+    uint256 worth = this.positionWorth();
+    uint256 usdcAmountToBuyOrSell = rebalanceAction == RebalanceAction.Buy
+      ? usdcAmountToHave - worth
+      : worth - usdcAmountToHave;
+
+    return (rebalanceAction, usdcAmountToBuyOrSell);
   }
 
   function allocationByToken(address tokenAddress) external view returns (TokenAllocation memory) {
@@ -49,7 +59,7 @@ abstract contract IPositionManager {
     return RebalanceAction.Nothing; 
   }
 
-  function stats() external view returns (PositionManagerStats memory) {
+  function stats() virtual external view returns (PositionManagerStats memory) {
     return PositionManagerStats({
       positionManagerAddress: address(this),
       name: this.name(),
@@ -59,8 +69,10 @@ abstract contract IPositionManager {
       tokenExposures: this.exposures(),
       tokenAllocations: this.allocations(),
       price: this.price(),
-      canRebalance: this.canRebalance(),
-      collateralRatio: this.collateralRatio()
+      collateralRatio: this.collateralRatio(),
+      loanWorth: 0,
+      liquidationLevel: 0,
+      collateral: 0 
     });
   }
 

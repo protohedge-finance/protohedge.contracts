@@ -31,7 +31,7 @@ export ETH_PRICE_FEED=$(read_address ".ethPriceFeed")
 export AAVE_L2_POOL=$(read_address ".aaveL2Pool")
 export AAVE_L2_ENCODER=$(read_address ".aaveL2Encoder")
 export ETH_PRICE_FEED=$(read_address ".ethPriceFeed")
-
+export AAVE_PROTOCOL_DATA_PROVIDER=$(read_address ".aaveProtocolDataProvider")
 
 export VERIFY=false
 export BTC_PERP_POOL_POSITION_MANAGER_NAME="BtcPerpPool"
@@ -42,7 +42,7 @@ export AAVE_BORROW_BTC_POSITION_MANAGER_DECIMALS=8
 export AAVE_BORROW_ETH_POSITION_MANAGER_NAME="AaveBorrowEth"
 export AAVE_BORROW_ETH_POSITION_MANAGER_DECIMALS=8
 export AAVE_BORROW_ETH_TARGET_LTV=60
-export GLP_PERP_POOL_VAULT_NAME="GLP-PERP-POOL"
+export GLP_AAVE_BORROW_VAULT_NAME="GLP-PERP-POOL"
 
 forge script DeployAllContracts \
 	--broadcast \

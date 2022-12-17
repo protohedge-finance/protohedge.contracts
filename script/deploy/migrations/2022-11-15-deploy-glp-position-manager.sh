@@ -1,8 +1,8 @@
 #!/bin/bash
 
-export $(cat ../../../.env | xargs)
+export $(cat ../../.env | xargs)
 
-deps=$(cat ../../../config/addresses.arbitrum.json)
+deps=$(cat ../../config/addresses.arbitrum.json)
 
 read_address () {
     echo $deps | jq $1 | tr -d '"'
@@ -16,7 +16,7 @@ export ETH_PRICE_FEED=$(read_address ".ethPriceFeed")
 export PRICE_UTILS=$(read_address ".priceUtils")
 export GLP_UTILS=$(read_address ".glpUtils")
 export REWARD_ROUTER=$(read_address ".rewardRouter")
-export GLP_PERP_POOL_VAULT=$(read_address ".glpPerpPoolVault")
+export GLP_AAVE_BORROW_VAULT=$(read_address ".glpAaveBorrowVault")
 
 forge script DeployGlpPositionManager \
 	--broadcast \

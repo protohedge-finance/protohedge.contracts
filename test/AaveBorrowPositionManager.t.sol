@@ -7,7 +7,7 @@ import {IVaultReader} from "gmx/IVaultReader.sol";
 import {IGmxRouter} from "gmx/IGmxRouter.sol";
 import {GlpTokenAllocation} from "src/GlpTokenAllocation.sol";
 import {TokenExposure} from "src/TokenExposure.sol";
-import {AaveBorrowPositionManager} from "src/AaveBorrowPositionManager.sol";
+import {AaveBorrowPositionManager,InitializeArgs} from "src/AaveBorrowPositionManager.sol";
 import {ProtohedgeVault} from "src/ProtohedgeVault.sol";
 import {MintableToken} from "test/mocks/MintableToken.sol";
 import {IAaveL2Pool} from "aave/IAaveL2Pool.sol";
@@ -93,20 +93,23 @@ contract AaveBorrowPositionManagerTest is Test {
 
         aaveBorrowPositionManager = new AaveBorrowPositionManager();
 
-        aaveBorrowPositionManager.initialize(
-            "TestPositionManager",
-            8,
-            targetLtv,
-            mockAddress,
-            mockAddress,
-            mockAddress,
-            address(usdcToken),
-            address(borrowToken),
-            protohedgeVaultAddress,
-            mockAddress,
-            mockAddress,
-            mockAddress
-        );
+        InitializeArgs memory args = InitializeArgs({
+            positionName: "TestPositionManager",
+            decimals: 8,
+            targetLtv: targetLtv,
+            tokenPriceFeedAddress: mockAddress,
+            aaveL2PoolAddress: mockAddress,
+            aaveL2EncoderAddress: mockAddress,
+            usdcAddress: address(usdcToken),
+            borrowTokenAddress: address(borrowToken),
+            protohedgeVaultAddress: protohedgeVaultAddress,
+            priceUtilsAddress: mockAddress,
+            gmxRouterAddress: mockAddress,
+            glpUtilsAddress: mockAddress,
+            aaveProtocolDataProviderAddress: mockAddress
+        });
+
+        aaveBorrowPositionManager.initialize(args);
 
         vm.prank(protohedgeVaultAddress);
         usdcToken.approve(address(aaveBorrowPositionManager), 1 * 10**6);

@@ -27,7 +27,7 @@ contract DeployBtcPerpPoolPositionManager is Script, Test, Deployer {
       vm.envAddress("BTC_POOL_COMMITTER"),
       vm.envAddress("USDC"),
       vm.envAddress("PERP_POOL_UTILS"),
-      vm.envAddress("GLP_PERP_POOL_VAULT") 
+      vm.envAddress("GLP_AAVE_BORROW_VAULT") 
     );
 
     vm.setEnv("BTC_PERP_POOL_POSITION_MANAGER", toString(proxyAddress));
