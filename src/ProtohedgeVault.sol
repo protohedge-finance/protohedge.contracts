@@ -7,6 +7,8 @@ import {PhvToken} from "src/PhvToken.sol";
 import {PositionManagerStats} from "src/PositionManagerStats.sol";
 import {VaultStats} from "src/VaultStats.sol";
 import {PriceUtils} from "src/PriceUtils.sol";
+import {TokenExposure} from "src/TokenExposure.sol";
+import {BASIS_POINTS_DIVISOR} from "src/Constants.sol";
 
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
@@ -32,10 +34,13 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   PriceUtils private priceUtils; 
   address private ethPriceFeedAddress;
   uint256 private gasCostPayed;
+  // % diff in exposure to rebalance on
+  uint256 public rebalancePercent;
 
-  function initialize(string memory _vaultName, address _usdcAddress) public initializer {
+  function initialize(string memory _vaultName, address _usdcAddress, uint256 _rebalancePercent) public initializer {
     vaultName = _vaultName;
     usdcToken = ERC20(_usdcAddress);
+    rebalancePercent = _rebalancePercent;
     phvToken = new PhvToken();
 
     __Ownable_init();
@@ -87,6 +92,56 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     gasCostPayed += gasCost;
   }
 
+  function shouldRebalance(RebalanceQueueData[] memory rebalanceQueueData) external view returns (bool) {
+    // Only rebalance if
+    // 1. All position managers are able to
+    // 2. Worth of one or more exposures is not delta neutral (defined as
+    
+    uint256 initGas = gasleft();
+    for (uint8 i = 0; i < rebalanceQueueData.length; i++) {
+      if (!rebalanceQueueData[i].positionManager.canRebalance(rebalanceQueueData[i].usdcAmountToHave)) {
+        return false;
+      }
+    }
+
+    return checkExposureOutOfRange();
+  }
+
+  function checkExposureOutOfRange() internal view returns (bool) {
+    for (uint8 i = 0; i < positionManagers.length; i++) {
+      TokenExposure[] memory positionManagerExposures = positionManagers[i].exposures();
+      for (uint8 j = 0; j < positionManagerExposures.length; j++) {
+        for (uint8 k = 0; k < positionManagers.length; k++) {
+          TokenExposure[] memory positionManagerCompareExposures = positionManagers[k].exposures();
+          for (uint8 m = 0; m < positionManagerCompareExposures.length; m++) {
+            if (i == k && j == m) continue;
+
+            TokenExposure memory exposure1 = positionManagerExposures[j];
+            TokenExposure memory exposure2 = positionManagerCompareExposures[k];
+
+            if (exposure1.token != exposure2.token) continue;
+
+            uint256 exposureAmount1 = abs(exposure1.amount); 
+            uint256 exposureAmount2 = abs(exposure2.amount);
+            uint256 average = exposureAmount1 + exposureAmount2 / 2;
+            uint256 upperBound = average + (average * rebalancePercent / BASIS_POINTS_DIVISOR);
+            uint256 lowerBound = average - (average * rebalancePercent / BASIS_POINTS_DIVISOR);
+
+            if (exposureAmount1 < lowerBound || exposureAmount1 > upperBound) return false;
+            if (exposureAmount2 < lowerBound || exposureAmount2 > upperBound) return false;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  function abs(int256 num) internal pure returns (uint256) {
+    return uint256(num < 0 ? -1 * num : num);
+  }
+
+
   function stats() public view returns (VaultStats memory) {
     PositionManagerStats[] memory positionManagersStats = new PositionManagerStats[](positionManagers.length);
 
@@ -98,7 +153,9 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
       vaultAddress: address(this),
       positionManagers: positionManagersStats, 
       vaultWorth: vaultWorth(),
-      availableLiquidity: getAvailableLiquidity()
+      availableLiquidity: getAvailableLiquidity(),
+      costBasis: vaultCostBasis(),
+      pnl: pnl()
     });
   }
 
@@ -139,5 +196,9 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
   function setEthPriceFeedAddress(address _ethPriceFeedAddress) external {
     ethPriceFeedAddress = _ethPriceFeedAddress;
+  }
+
+  function setRebalancePercent(uint256 _rebalancePercent) external {
+    rebalancePercent = _rebalancePercent;
   }
 }

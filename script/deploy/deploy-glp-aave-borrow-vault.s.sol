@@ -19,7 +19,8 @@ contract DeployGlpAaveBorrowVault is Script, Deployer {
 
     wrapped.initialize(
       vm.envString("GLP_AAVE_BORROW_VAULT_NAME"),
-      vm.envAddress("USDC")
+      vm.envAddress("USDC"),
+      vm.envUint("GLP_AAVE_REBALANCE_PERCENT")
     );
 
     vm.setEnv("GLP_AAVE_BORROW_VAULT", toString(proxyAddress));
