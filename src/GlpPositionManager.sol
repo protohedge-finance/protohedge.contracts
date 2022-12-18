@@ -138,11 +138,8 @@ contract GlpPositionManager is IPositionManager, Initializable, UUPSUpgradeable,
     if (rebalanceAction == RebalanceAction.Sell && amountToBuyOrSell < MIN_SELL_AMOUNT) {
       return false;   
     }
-    
-    uint256 cooldownDuration = glpManager.cooldownDuration();
-    uint256 lastAddedAt = glpManager.lastAddedAt(address(this));
 
-    return lastAddedAt + cooldownDuration > block.timestamp;
+    return true;
   }
 
   function price() override external view returns (uint256) {

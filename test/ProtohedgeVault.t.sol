@@ -48,7 +48,7 @@ contract ProtohedgeVaultTest is Test {
         );
 
         vm.mockCall(
-          mockAddress,
+          positionManagerShortAddress,
           abi.encodeWithSelector(IPositionManager.canRebalance.selector),
           abi.encode(false)
         );
@@ -64,6 +64,8 @@ contract ProtohedgeVaultTest is Test {
         protohedgeVault.initialize(
           "ProtohedgeVaultTest",
            mockAddress,
+           mockAddress,
+           mockAddress,
            rebalancePercent   
         );
 
@@ -75,6 +77,25 @@ contract ProtohedgeVaultTest is Test {
         positionManagers[1] = shortPositionManager;
         protohedgeVault.setPositionManagers(positionManagers);
     }
+    
+    function testShouldRebalanceReturnsTrue() public {
+        vm.mockCall(
+          positionManagerLongAddress,
+          abi.encodeWithSelector(IPositionManager.canRebalance.selector),
+          abi.encode(true)
+        );
+
+        vm.mockCall(
+          positionManagerShortAddress,
+          abi.encodeWithSelector(IPositionManager.canRebalance.selector),
+          abi.encode(true)
+        );
+
+         
+        RebalanceQueueData[] memory rebalanceQueueData = createTestRebalanceQueueData();
+        bool shouldRebalance = protohedgeVault.shouldRebalance(rebalanceQueueData);
+        assertFalse(shouldRebalance); 
+    }
 
     function testShouldRebalanceReturnsFalseIfPositionManagerCannotRebalance() public {
         vm.mockCall(
@@ -82,7 +103,44 @@ contract ProtohedgeVaultTest is Test {
           abi.encodeWithSelector(IPositionManager.canRebalance.selector),
           abi.encode(false)
         );
-        
+            
+        RebalanceQueueData[] memory rebalanceQueueData = createTestRebalanceQueueData();
+        bool shouldRebalance = protohedgeVault.shouldRebalance(rebalanceQueueData);
+        assertFalse(shouldRebalance); 
+    } 
+
+    function testShouldRebalanceReturnsFalseIfExposureOutOfRange() public {
+        vm.mockCall(
+          positionManagerLongAddress,
+          abi.encodeWithSelector(IPositionManager.canRebalance.selector),
+          abi.encode(true)
+        );
+
+        vm.mockCall(
+          positionManagerShortAddress,
+          abi.encodeWithSelector(IPositionManager.canRebalance.selector),
+          abi.encode(true)
+        );
+
+        TokenExposure[] memory tokenExposures = new TokenExposure[](1);
+        tokenExposures[0] = TokenExposure({
+          amount: 2*10**6,
+          token: btcAddress,
+          symbol: "BTC"
+        });
+
+        vm.mockCall(
+          positionManagerLongAddress,
+          abi.encodeWithSelector(IPositionManager.exposures.selector),
+          abi.encode(tokenExposures)
+        );
+
+        RebalanceQueueData[] memory rebalanceQueueData = createTestRebalanceQueueData();
+        bool shouldRebalance = protohedgeVault.shouldRebalance(rebalanceQueueData);
+        assertFalse(shouldRebalance); 
+    }
+
+    function createTestRebalanceQueueData() internal view returns (RebalanceQueueData[] memory rebalanceQueueData) {
         RebalanceQueueData[] memory rebalanceQueueData = new RebalanceQueueData[](2);
         rebalanceQueueData[0] = RebalanceQueueData({
             positionManager: IPositionManager(positionManagerLongAddress),
@@ -94,9 +152,7 @@ contract ProtohedgeVaultTest is Test {
             usdcAmountToHave: 1*10**6
         });
 
-
-        bool shouldRebalance = protohedgeVault.shouldRebalance(rebalanceQueueData);
-        assertFalse(shouldRebalance); 
-    } 
+        return rebalanceQueueData;
+    }
 }
 

@@ -26,6 +26,8 @@ struct RebalanceQueueData {
   uint256 usdcAmountToHave;
 } 
 
+error PositionManagerCannotRebalance(address positionManager, uint256 amount);
+
 contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   string public vaultName; 
   ERC20 private usdcToken;
@@ -37,10 +39,12 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   // % diff in exposure to rebalance on
   uint256 public rebalancePercent;
 
-  function initialize(string memory _vaultName, address _usdcAddress, uint256 _rebalancePercent) public initializer {
+  function initialize(string memory _vaultName, address _usdcAddress, address _priceUtilsAddress, address _ethPriceFeedAddress, uint256 _rebalancePercent) public initializer {
     vaultName = _vaultName;
     usdcToken = ERC20(_usdcAddress);
     rebalancePercent = _rebalancePercent;
+    priceUtils = PriceUtils(_priceUtilsAddress);
+    ethPriceFeedAddress = _ethPriceFeedAddress;
     phvToken = new PhvToken();
 
     __Ownable_init();
@@ -81,9 +85,10 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
   function rebalance(RebalanceQueueData[] memory rebalanceQueueData) external {
     uint256 initGas = gasleft();
+    
     for (uint8 i = 0; i < rebalanceQueueData.length; i++) {
       if (!rebalanceQueueData[i].positionManager.canRebalance(rebalanceQueueData[i].usdcAmountToHave)) {
-        revert("Position manager cannot rebalance");
+        revert PositionManagerCannotRebalance(address(rebalanceQueueData[i].positionManager), rebalanceQueueData[i].usdcAmountToHave);
       }
       rebalanceQueueData[i].positionManager.rebalance(rebalanceQueueData[i].usdcAmountToHave);
     }
@@ -96,8 +101,6 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     // Only rebalance if
     // 1. All position managers are able to
     // 2. Worth of one or more exposures is not delta neutral (defined as
-    
-    uint256 initGas = gasleft();
     for (uint8 i = 0; i < rebalanceQueueData.length; i++) {
       if (!rebalanceQueueData[i].positionManager.canRebalance(rebalanceQueueData[i].usdcAmountToHave)) {
         return false;
@@ -117,7 +120,7 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
             if (i == k && j == m) continue;
 
             TokenExposure memory exposure1 = positionManagerExposures[j];
-            TokenExposure memory exposure2 = positionManagerCompareExposures[k];
+            TokenExposure memory exposure2 = positionManagerCompareExposures[m];
 
             if (exposure1.token != exposure2.token) continue;
 
