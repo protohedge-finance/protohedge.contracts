@@ -17,7 +17,10 @@ import {GlpUtils} from "src/GlpUtils.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {PositionManagerStats} from "src/PositionManagerStats.sol";
 import {IAaveProtocolDataProvider} from "aave/IAaveProtocolDataProvider.sol";
-import "forge-std/Test.sol";
+import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
+import {RebalanceAction} from "src/RebalanceAction.sol";
+
+uint256 constant MIN_BUY_OR_SELL_AMOUNT = 500000;
 
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
@@ -198,8 +201,14 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
 
   function compound() override external {}
 
-  function canRebalance(uint256 amountOfUsdcToHave) override external view returns (bool) {
-    return _canRebalance;
+  function canRebalance(uint256 amountOfUsdcToHave) override external view returns (bool, string memory) {
+    (,uint256 amountToBuyOrSell) = this.rebalanceInfo(amountOfUsdcToHave);
+
+    if (amountToBuyOrSell < MIN_BUY_OR_SELL_AMOUNT) {
+      return (false, string.concat("Min sell amount is ", Strings.toString(MIN_BUY_OR_SELL_AMOUNT), "but buy or sell amount is", Strings.toString(amountToBuyOrSell)));
+    }
+
+    return (true, "");
   }
 
   function getLoanToValue() public view returns (uint256) {

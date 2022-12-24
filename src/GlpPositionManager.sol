@@ -19,6 +19,7 @@ import {PositionType} from "src/PositionType.sol";
 import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {BASIS_POINTS_DIVISOR} from "src/Constants.sol";
 import {RebalanceAction} from "src/RebalanceAction.sol";
+import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
@@ -132,14 +133,14 @@ contract GlpPositionManager is IPositionManager, Initializable, UUPSUpgradeable,
     return tokenAllocations;
   }
 
-  function canRebalance(uint256 usdcAmountToHave) override external view returns (bool) {
+  function canRebalance(uint256 usdcAmountToHave) override external view returns (bool, string memory) {
     (RebalanceAction rebalanceAction, uint256 amountToBuyOrSell) = this.rebalanceInfo(usdcAmountToHave);
 
     if (rebalanceAction == RebalanceAction.Sell && amountToBuyOrSell < MIN_SELL_AMOUNT) {
-      return false;   
+      return (false, string.concat("Min sell amount is", Strings.toString(MIN_SELL_AMOUNT), "but sell amount is", Strings.toString(amountToBuyOrSell)));
     }
 
-    return true;
+    return (true, "");
   }
 
   function price() override external view returns (uint256) {
@@ -163,5 +164,9 @@ contract GlpPositionManager is IPositionManager, Initializable, UUPSUpgradeable,
 
   function collateralRatio() override external pure returns (uint256) {
     return BASIS_POINTS_DIVISOR;
+  }
+
+  function setGlpUtils(address glpUtilsAddress) external {
+    glpUtils = GlpUtils(glpUtilsAddress); 
   }
 }

@@ -8,6 +8,7 @@ struct VaultStats {
   PositionManagerStats[] positionManagers;
   uint256 vaultWorth;	
   uint256 availableLiquidity;
+  uint256 positionsWorth;
   uint costBasis;
   uint256 pnl;
 }

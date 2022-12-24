@@ -137,8 +137,8 @@ contract PerpPoolPositionManager is IPositionManager, Initializable, UUPSUpgrade
 
   function compound() override external {}
 
-  function canRebalance(uint256) override external view returns (bool) {
-    return _canRebalance;
+  function canRebalance(uint256) override external view returns (bool, string memory errorMessage) {
+    return (_canRebalance, "");
   }
 
   function collateralRatio() override external pure returns (uint256) {

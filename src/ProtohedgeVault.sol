@@ -26,7 +26,7 @@ struct RebalanceQueueData {
   uint256 usdcAmountToHave;
 } 
 
-error PositionManagerCannotRebalance(address positionManager, uint256 amount);
+error PositionManagerCannotRebalance(address positionManager, uint256 amount, string errorMessage);
 
 contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   string public vaultName; 
@@ -70,6 +70,16 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     return vaultWorth() * 8 / 10;
   }
 
+  function positionsWorth() public view returns (uint256) {
+    uint256 worth = 0;
+
+    for (uint256 i = 0; i < positionManagers.length; i++) {
+      worth += positionManagers[i].positionWorth();
+    }
+
+    return worth;
+  }
+
   function addLiquidity(uint256 usdcAmount) external {
     usdcToken.transferFrom(msg.sender, address(this), usdcAmount);
     phvToken.mint(msg.sender, usdcAmount);
@@ -87,8 +97,9 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     uint256 initGas = gasleft();
     
     for (uint8 i = 0; i < rebalanceQueueData.length; i++) {
-      if (!rebalanceQueueData[i].positionManager.canRebalance(rebalanceQueueData[i].usdcAmountToHave)) {
-        revert PositionManagerCannotRebalance(address(rebalanceQueueData[i].positionManager), rebalanceQueueData[i].usdcAmountToHave);
+      (bool canRebalance, string memory errorMessage) = rebalanceQueueData[i].positionManager.canRebalance(rebalanceQueueData[i].usdcAmountToHave);
+      if (!canRebalance) {
+        revert PositionManagerCannotRebalance(address(rebalanceQueueData[i].positionManager), rebalanceQueueData[i].usdcAmountToHave, errorMessage);
       }
       rebalanceQueueData[i].positionManager.rebalance(rebalanceQueueData[i].usdcAmountToHave);
     }
@@ -97,20 +108,21 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     gasCostPayed += gasCost;
   }
 
-  function shouldRebalance(RebalanceQueueData[] memory rebalanceQueueData) external view returns (bool) {
+  function shouldRebalance(RebalanceQueueData[] memory rebalanceQueueData) external view returns (bool, string memory) {
     // Only rebalance if
     // 1. All position managers are able to
     // 2. Worth of one or more exposures is not delta neutral (defined as
     for (uint8 i = 0; i < rebalanceQueueData.length; i++) {
-      if (!rebalanceQueueData[i].positionManager.canRebalance(rebalanceQueueData[i].usdcAmountToHave)) {
-        return false;
+      (bool canRebalance, string memory errorMessage) = rebalanceQueueData[i].positionManager.canRebalance(rebalanceQueueData[i].usdcAmountToHave);
+      if (!canRebalance) {
+        return (false, errorMessage);
       }
     }
 
     return checkExposureOutOfRange();
   }
 
-  function checkExposureOutOfRange() internal view returns (bool) {
+  function checkExposureOutOfRange() internal view returns (bool, string memory) {
     for (uint8 i = 0; i < positionManagers.length; i++) {
       TokenExposure[] memory positionManagerExposures = positionManagers[i].exposures();
       for (uint8 j = 0; j < positionManagerExposures.length; j++) {
@@ -130,14 +142,14 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
             uint256 upperBound = average + (average * rebalancePercent / BASIS_POINTS_DIVISOR);
             uint256 lowerBound = average - (average * rebalancePercent / BASIS_POINTS_DIVISOR);
 
-            if (exposureAmount1 < lowerBound || exposureAmount1 > upperBound) return false;
-            if (exposureAmount2 < lowerBound || exposureAmount2 > upperBound) return false;
+            if (exposureAmount1 < lowerBound || exposureAmount1 > upperBound) return (true, "");
+            if (exposureAmount2 < lowerBound || exposureAmount2 > upperBound) return (true, "");
           }
         }
       }
     }
 
-    return false;
+    return (false, "No exposure out of range");
   }
 
   function abs(int256 num) internal pure returns (uint256) {
@@ -158,7 +170,8 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
       vaultWorth: vaultWorth(),
       availableLiquidity: getAvailableLiquidity(),
       costBasis: vaultCostBasis(),
-      pnl: pnl()
+      pnl: pnl(),
+      positionsWorth: positionsWorth()
     });
   }
 

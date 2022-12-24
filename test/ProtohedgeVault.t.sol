@@ -93,7 +93,7 @@ contract ProtohedgeVaultTest is Test {
 
          
         RebalanceQueueData[] memory rebalanceQueueData = createTestRebalanceQueueData();
-        bool shouldRebalance = protohedgeVault.shouldRebalance(rebalanceQueueData);
+        (bool shouldRebalance,) = protohedgeVault.shouldRebalance(rebalanceQueueData);
         assertFalse(shouldRebalance); 
     }
 
@@ -105,7 +105,7 @@ contract ProtohedgeVaultTest is Test {
         );
             
         RebalanceQueueData[] memory rebalanceQueueData = createTestRebalanceQueueData();
-        bool shouldRebalance = protohedgeVault.shouldRebalance(rebalanceQueueData);
+        (bool shouldRebalance,) = protohedgeVault.shouldRebalance(rebalanceQueueData);
         assertFalse(shouldRebalance); 
     } 
 
@@ -136,11 +136,11 @@ contract ProtohedgeVaultTest is Test {
         );
 
         RebalanceQueueData[] memory rebalanceQueueData = createTestRebalanceQueueData();
-        bool shouldRebalance = protohedgeVault.shouldRebalance(rebalanceQueueData);
+        (bool shouldRebalance,) = protohedgeVault.shouldRebalance(rebalanceQueueData);
         assertFalse(shouldRebalance); 
     }
 
-    function createTestRebalanceQueueData() internal view returns (RebalanceQueueData[] memory rebalanceQueueData) {
+    function createTestRebalanceQueueData() internal view returns (RebalanceQueueData[] memory) {
         RebalanceQueueData[] memory rebalanceQueueData = new RebalanceQueueData[](2);
         rebalanceQueueData[0] = RebalanceQueueData({
             positionManager: IPositionManager(positionManagerLongAddress),
