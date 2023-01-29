@@ -74,7 +74,7 @@ contract GlpPositionManager is IPositionManager, Initializable, UUPSUpgradeable,
 
   function _authorizeUpgrade(address) internal override onlyOwner {}
 
-  function name() override external pure returns (string memory) {
+  function name() override public pure returns (string memory) {
     return "Glp";
   }
 
@@ -137,7 +137,7 @@ contract GlpPositionManager is IPositionManager, Initializable, UUPSUpgradeable,
     (RebalanceAction rebalanceAction, uint256 amountToBuyOrSell) = this.rebalanceInfo(usdcAmountToHave);
 
     if (rebalanceAction == RebalanceAction.Sell && amountToBuyOrSell < MIN_SELL_AMOUNT) {
-      return (false, string.concat("Min sell amount is", Strings.toString(MIN_SELL_AMOUNT), "but sell amount is", Strings.toString(amountToBuyOrSell)));
+      return (false, string.concat("Min sell amount is", Strings.toString(MIN_SELL_AMOUNT), "but sell amount is", Strings.toString(amountToBuyOrSell), "for position manager", name()));
     }
 
     return (true, "");

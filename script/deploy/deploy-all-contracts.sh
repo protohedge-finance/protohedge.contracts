@@ -47,6 +47,6 @@ export GLP_AAVE_REBALANCE_PERCENT=2000
 
 forge script DeployAllContracts \
 	--broadcast \
-	--private-key $PERSONAL_PRIVATE_KEY \
+	--private-key $PRIVATE_KEY \
 	--rpc-url $RPC_URL \
 	--skip-simulation

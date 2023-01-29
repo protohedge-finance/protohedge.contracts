@@ -10,22 +10,22 @@ import {Deployer} from "src/Deployer.sol";
 import {IPositionManager} from "src/IPositionManager.sol";
 import {AaveBorrowPositionManager} from "src/AaveBorrowPositionManager.sol";
 
-contract UpdateAaveBtcBorrowPositionManager is Script, Test, Deployer {
+contract UpdateAaveEthBorrowPositionManager is Script, Test, Deployer {
   
   function run() public returns (address) {
     vm.startBroadcast();
 
-    address aaveBtcBorrowPositionManagerAddress = vm.envAddress("AAVE_BTC_BORROW_POSITION_MANAGER");
+    address aaveEthBorrowPositionManagerAddress = vm.envAddress("AAVE_ETH_BORROW_POSITION_MANAGER");
 
-    AaveBorrowPositionManager aaveBtcBorrowPositionManager = AaveBorrowPositionManager(aaveBtcBorrowPositionManagerAddress);
+    AaveBorrowPositionManager aaveEthBorrowPositionManager = AaveBorrowPositionManager(aaveEthBorrowPositionManagerAddress);
     AaveBorrowPositionManager implementation = new AaveBorrowPositionManager();
 
-    aaveBtcBorrowPositionManager.upgradeTo(address(implementation));
+    aaveEthBorrowPositionManager.upgradeTo(address(implementation));
 
-    emit log_named_string("Updated AaveBtcBorrowPositionManager to: ", toString(address(implementation)));
+    emit log_named_string("Updated AaveEthBorrowPositionManager to: ", toString(address(implementation)));
 
     vm.stopBroadcast();
 
-    return aaveBtcBorrowPositionManagerAddress;
+    return aaveEthBorrowPositionManagerAddress;
   }
 }

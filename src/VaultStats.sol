@@ -10,5 +10,5 @@ struct VaultStats {
   uint256 availableLiquidity;
   uint256 positionsWorth;
   uint costBasis;
-  uint256 pnl;
+  int256 pnl;
 }

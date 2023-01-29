@@ -8,7 +8,7 @@ import {PositionManagerStats} from "src/PositionManagerStats.sol";
 
 abstract contract IPositionManager {
   uint256 public id;
-  function name() virtual external view returns (string memory);
+  function name() virtual public view returns (string memory);
   function positionWorth() virtual external view returns (uint256);
   function costBasis() virtual external view returns (uint256);
   function pnl() virtual external view returns (int256);

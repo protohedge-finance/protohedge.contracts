@@ -9,11 +9,11 @@ read_address () {
 }
 
 export RPC_URL="https://arb1.arbitrum.io/rpc"
-export AAVE_BTC_BORROW_POSITION_MANAGER=$(read_address ".aaveBtcBorrowPositionManager") 
+export AAVE_ETH_BORROW_POSITION_MANAGER=$(read_address ".aaveEthBorrowPositionManager") 
 
-forge script UpdateAaveBtcBorrowPositionManager \
+forge script UpdateAaveEthBorrowPositionManager \
 	--broadcast \
 	--private-key $PERSONAL_PRIVATE_KEY \
-	--verify 
+	--verify \
 	--rpc-url $RPC_URL \
 	--skip-simulation

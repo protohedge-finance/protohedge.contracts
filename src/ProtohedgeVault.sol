@@ -59,7 +59,7 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
       totalLiquidity += positionManagers[i].positionWorth();
     }
 
-    return totalLiquidity; 
+    return totalLiquidity;
   }
 
   function getAvailableLiquidity() public view returns (uint256) {
@@ -119,10 +119,21 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
       }
     }
 
+    uint256 worth = vaultWorth();
+    uint256 availableLiquidity = getAvailableLiquidity();
+
+    if (worth == 0) {
+      return (false, "No liquidity to rebalance");
+    }
+
+    if (availableLiquidity * BASIS_POINTS_DIVISOR / worth > 3000) {
+      return (true, "");
+    }
+
     return checkExposureOutOfRange();
   }
 
-  function checkExposureOutOfRange() internal view returns (bool, string memory) {
+  function checkExposureOutOfRange() internal view returns (bool, string memory) {      
     for (uint8 i = 0; i < positionManagers.length; i++) {
       TokenExposure[] memory positionManagerExposures = positionManagers[i].exposures();
       for (uint8 j = 0; j < positionManagerExposures.length; j++) {
@@ -187,8 +198,8 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     }
   }
 
-  function pnl() public view returns (uint256) {
-    return vaultWorth() - vaultCostBasis();
+  function pnl() public view returns (int256) {
+    return int256(vaultWorth()) - int256(vaultCostBasis());
   }
 
   function vaultCostBasis() public view returns (uint256) {

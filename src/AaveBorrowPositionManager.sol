@@ -20,7 +20,7 @@ import {IAaveProtocolDataProvider} from "aave/IAaveProtocolDataProvider.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {RebalanceAction} from "src/RebalanceAction.sol";
 
-uint256 constant MIN_BUY_OR_SELL_AMOUNT = 500000;
+uint256 constant MIN_BUY_OR_SELL_AMOUNT = 300000;
 
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
@@ -205,7 +205,7 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
     (,uint256 amountToBuyOrSell) = this.rebalanceInfo(amountOfUsdcToHave);
 
     if (amountToBuyOrSell < MIN_BUY_OR_SELL_AMOUNT) {
-      return (false, string.concat("Min sell amount is ", Strings.toString(MIN_BUY_OR_SELL_AMOUNT), "but buy or sell amount is", Strings.toString(amountToBuyOrSell)));
+      return (false, string.concat("Min buy or sell amount is ", Strings.toString(MIN_BUY_OR_SELL_AMOUNT), "but buy or sell amount is ", Strings.toString(amountToBuyOrSell), " for position manager", name()));
     }
 
     return (true, "");
