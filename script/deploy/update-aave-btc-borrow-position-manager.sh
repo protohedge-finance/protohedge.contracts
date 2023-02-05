@@ -14,6 +14,6 @@ export AAVE_BTC_BORROW_POSITION_MANAGER=$(read_address ".aaveBtcBorrowPositionMa
 forge script UpdateAaveBtcBorrowPositionManager \
 	--broadcast \
 	--private-key $PERSONAL_PRIVATE_KEY \
-	--verify 
+	--verify  \
 	--rpc-url $RPC_URL \
 	--skip-simulation

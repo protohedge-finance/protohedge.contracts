@@ -44,7 +44,8 @@ contract DeployAllContracts is Script, Test {
     deployGlpAaveBorrowVault.setPositionManagers(glpAaveBorrowVaultAddress, glpAaveBorrowVaultPositionManagers);
 
     vm.stopBroadcast();
-     
+
+    emit log_named_address("It is", address(this));
     emit log_named_address("PriceUtils is: ", priceUtilsAddress);
     emit log_named_address("GlpUtils is: ", glpUtilsAddress);
     emit log_named_address("PerpPoolUtils is: ", perpPoolUtilsAddress);

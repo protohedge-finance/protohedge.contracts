@@ -94,7 +94,7 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
   }
 
   function positionWorth() override public view returns (uint256) {
-    return collateral + getLoanWorth();
+    return getCollateral() + getLoanWorth();
   }
 
   function costBasis() override public view returns (uint256) {
@@ -139,7 +139,6 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
        
     gmxRouter.swap(swapPath, tokensToBorrow, 0, address(protohedgeVault));
 
-    amountOfTokens += tokensToBorrow;
     usdcAmountBorrowed += usdcAmount;
      
     return tokensToBorrow;
@@ -158,7 +157,7 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
 
     uint256 amountBefore = borrowToken.balanceOf(address(this));
     gmxRouter.swap(swapPath, usdcAmountWithSlippage, 0, address(this));
-    uint256 amountSwapped = Math.min(borrowToken.balanceOf(address(this)) - amountBefore, amountOfTokens);
+    uint256 amountSwapped = Math.min(borrowToken.balanceOf(address(this)) - amountBefore, getAmountOfTokens());
     bytes32 repayArgs = l2Encoder.encodeRepayParams(
       address(borrowToken),
       amountSwapped,
@@ -166,6 +165,8 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
     );
 
     l2Pool.repay(repayArgs);
+
+    usdcAmountBorrowed -= amountSwapped * this.price() / (1*10**decimals);
 
     return amountSwapped;
   }
@@ -211,14 +212,25 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
     return (true, "");
   }
 
+  function getCollateral() public view returns (uint256) {
+    (uint256 currentATokenBalance,,,,,,,,) = aaveProtocolDataProvider.getUserReserveData(address(usdcToken), address(this));
+    return currentATokenBalance;
+  }
+
   function getLoanToValue() public view returns (uint256) {
-    return collateral > 0
-      ? getLoanWorth() * PERCENTAGE_MULTIPLIER / collateral
+    return getCollateral() > 0
+      ? getLoanWorth() * PERCENTAGE_MULTIPLIER / getCollateral() 
       : 0;
   }
 
+  function getAmountOfTokens() public view returns (uint256) {
+    (,,uint256 currentVariableDebt,,,,,,) = aaveProtocolDataProvider.getUserReserveData(address(borrowToken), address(this));
+    return currentVariableDebt;
+  }
+
   function getLoanWorth() public view returns (uint256) {
-    return amountOfTokens * price() / (1*10**decimals);
+    uint256 tokens = getAmountOfTokens(); 
+    return tokens * price() / (1*10**decimals);
   }
 
   function getLiquidationThreshold() public view returns (uint256) {
@@ -227,7 +239,7 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
   }
 
   function getLiquidationLevel() public view returns (uint256) {
-    return collateral * getLiquidationThreshold() / BASIS_POINTS_DIVISOR;
+    return getCollateral() * getLiquidationThreshold() / BASIS_POINTS_DIVISOR;
   }
 
   function collateralRatio() override public view returns (uint256) {

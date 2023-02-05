@@ -8,6 +8,7 @@ import {ProtohedgeVault} from "src/ProtohedgeVault.sol";
 import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Deployer} from "src/Deployer.sol";
 import {IPositionManager} from "src/IPositionManager.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
 
 contract DeployGlpAaveBorrowVault is Script, Deployer {
   function run() public returns (address) {
@@ -39,4 +40,12 @@ contract DeployGlpAaveBorrowVault is Script, Deployer {
 
     vm.stopBroadcast();
   } 
+
+  function transferToVault(address glpAaveBorrowVaultAddress) external {
+    vm.startBroadcast();
+
+    ERC20(vm.envAddress("USDC")).transfer(glpAaveBorrowVaultAddress, 20 * (1*10**6));
+
+    vm.stopBroadcast();
+  }
 }

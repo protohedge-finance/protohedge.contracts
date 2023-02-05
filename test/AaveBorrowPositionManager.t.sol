@@ -165,11 +165,6 @@ contract AaveBorrowPositionManagerTest is Test {
             .sig(aaveBorrowPositionManager.usdcAmountBorrowed.selector)
             .checked_write((collateral * targetLtv) / 100);
 
-        stdStore
-            .target(address(aaveBorrowPositionManager))
-            .sig(aaveBorrowPositionManager.amountOfTokens.selector)
-            .checked_write(3750);
-
         address[] memory swapPath = new address[](2);
         swapPath[0] = address(usdcToken);
         swapPath[1] = address(borrowToken);
