@@ -7,4 +7,5 @@ interface IAaveL2Pool {
   function supply(bytes32 arg) external;
   function borrow(bytes32 args) external;
   function repay(bytes32 args) external returns (uint256);
+  function withdraw(bytes32 args) external;
 }

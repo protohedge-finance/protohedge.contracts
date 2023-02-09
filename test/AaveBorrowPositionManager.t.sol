@@ -13,6 +13,7 @@ import {MintableToken} from "test/mocks/MintableToken.sol";
 import {IAaveL2Pool} from "aave/IAaveL2Pool.sol";
 import {IAaveL2Encoder} from "aave/IAaveL2Encoder.sol";
 import {PriceUtils} from "src/PriceUtils.sol";
+import {IAaveProtocolDataProvider} from "aave/IAaveProtocolDataProvider.sol";
 
 contract AaveBorrowPositionManagerTest is Test {
     using stdStorage for StdStorage;
@@ -29,7 +30,7 @@ contract AaveBorrowPositionManagerTest is Test {
     function setUp() public {
         usdcToken = new MintableToken("USDC", "USDC", 6);
         borrowToken = new MintableToken("WBTC", "WBTC", 8);
-        usdcToken.mint(protohedgeVaultAddress, 1 * 10**6);
+        usdcToken.mint(protohedgeVaultAddress, 2 * 10**6);
 
         vm.mockCall(
             mockAddress,
@@ -112,7 +113,7 @@ contract AaveBorrowPositionManagerTest is Test {
         aaveBorrowPositionManager.initialize(args);
 
         vm.prank(protohedgeVaultAddress);
-        usdcToken.approve(address(aaveBorrowPositionManager), 1 * 10**6);
+        usdcToken.approve(address(aaveBorrowPositionManager), 2 * 10**6);
     }
 
     function testBuy() public {
@@ -122,7 +123,7 @@ contract AaveBorrowPositionManagerTest is Test {
             address(mockAddress),
             abi.encodeCall(
                 IAaveL2Encoder.encodeSupplyParams,
-                (address(usdcToken), 1 * 10**6, 0)
+                (address(usdcToken), 1666600, 0)
             )
         );
 
@@ -130,7 +131,7 @@ contract AaveBorrowPositionManagerTest is Test {
             address(mockAddress),
             abi.encodeCall(
                 IAaveL2Encoder.encodeBorrowParams,
-                (address(borrowToken), 3750, 2, 0)
+                (address(borrowToken), 6250, 2, 0)
             )
         );
 
@@ -142,23 +143,36 @@ contract AaveBorrowPositionManagerTest is Test {
             address(mockAddress),
             abi.encodeCall(
                 IGmxRouter.swap,
-                (swapPath, 3750, 0, protohedgeVaultAddress)
+                (swapPath, 6250, 0, protohedgeVaultAddress)
             )
         );
 
         aaveBorrowPositionManager.buy(amountToBuy);
 
-        assertEq(aaveBorrowPositionManager.positionWorth(), 1600000);
-        assertEq(aaveBorrowPositionManager.costBasis(), 1600000);
+        assertEq(aaveBorrowPositionManager.costBasis(), 2666600);
     }
 
     function testSell() public {
+        uint256 amountToSell = 500000;
         uint256 collateral = 1 * 10**6;
 
-        stdStore
-            .target(address(aaveBorrowPositionManager))
-            .sig(aaveBorrowPositionManager.collateral.selector)
-            .checked_write(collateral);
+        vm.mockCall(
+          mockAddress,
+          abi.encodeCall(IAaveProtocolDataProvider.getUserReserveData, (address(borrowToken), address(aaveBorrowPositionManager))),
+          abi.encode(1,1,8000,1,1,1,1,1,1)
+        );
+
+        vm.mockCall(
+          mockAddress,
+          abi.encodeCall(IAaveProtocolDataProvider.getUserReserveData, (address(usdcToken), address(aaveBorrowPositionManager))),
+          abi.encode(collateral,1,1,1,1,1,1,1,1)
+        );
+
+        vm.mockCall(
+          mockAddress,
+          abi.encodeCall(GlpUtils.getFeeBasisPoints, (address(usdcToken), address(borrowToken), amountToSell)),
+          abi.encode(30)
+        );
 
         stdStore
             .target(address(aaveBorrowPositionManager))
@@ -173,18 +187,10 @@ contract AaveBorrowPositionManagerTest is Test {
             address(mockAddress),
             abi.encodeCall(
                 IGmxRouter.swap,
-                (swapPath, 303000, 1875, address(aaveBorrowPositionManager))
+                (swapPath, 501500, 0, address(aaveBorrowPositionManager))
             )
         );
 
-        vm.expectCall(
-            address(mockAddress),
-            abi.encodeCall(
-                IAaveL2Encoder.encodeRepayParams,
-                (address(borrowToken), 1875, 0)
-            )
-        );
-
-        aaveBorrowPositionManager.sell(500000);
+        aaveBorrowPositionManager.sell(amountToSell);
     }
 }

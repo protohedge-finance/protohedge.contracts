@@ -119,16 +119,16 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
       }
     }
 
-    uint256 worth = vaultWorth();
-    uint256 availableLiquidity = getAvailableLiquidity();
+    // uint256 worth = vaultWorth();
+    // uint256 availableLiquidity = getAvailableLiquidity();
 
-    if (worth == 0) {
-      return (false, "No liquidity to rebalance");
-    }
+    // if (worth == 0) {
+    //   return (false, "No liquidity to rebalance");
+    // }
 
-    if (availableLiquidity * BASIS_POINTS_DIVISOR / worth > 3000) {
-      return (true, "");
-    }
+    // if (availableLiquidity * BASIS_POINTS_DIVISOR / worth > 3000) {
+    //   return (true, "");
+    // }
 
     return checkExposureOutOfRange();
   }

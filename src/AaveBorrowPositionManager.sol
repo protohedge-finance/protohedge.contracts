@@ -168,7 +168,38 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
 
     usdcAmountBorrowed -= amountSwapped * this.price() / (1*10**decimals);
 
+
     return amountSwapped;
+  }
+
+  function rebalanceCollateral() public {
+    uint256 loanWorth = getLoanWorth();
+    uint256 currentCollateral = getCollateral();
+    uint256 expectedCollateral = loanWorth / targetLtv * 100;
+    uint256 currentLoanToValue = getLoanToValue();
+    uint256 upperBound = (targetLtv + 5) * PERCENTAGE_MULTIPLIER / 10;
+    uint256 lowerBound = (targetLtv - 5) * PERCENTAGE_MULTIPLIER / 10;
+    
+    if (currentLoanToValue > upperBound) {
+      uint256 amountToWithdraw = currentCollateral - expectedCollateral;
+
+      bytes32 withdrawArgs = l2Encoder.encodeWithdrawParams(
+        address(usdcToken),
+        amountToWithdraw
+      );
+
+      l2Pool.withdraw(withdrawArgs);
+    } else if (currentLoanToValue < lowerBound) {
+      uint256 amountToSupply = expectedCollateral - currentCollateral;
+
+      bytes32 supplyArgs = l2Encoder.encodeSupplyParams(
+        address(usdcToken),
+        amountToSupply,
+        0 
+      );
+
+      l2Pool.supply(supplyArgs);
+    }
   }
 
   function exposures() override external view returns (TokenExposure[] memory) {
@@ -261,5 +292,19 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
       liquidationLevel: getLiquidationLevel(),
       collateral: collateral
     });
+  }
+
+  function rebalance(uint256 usdcAmountToHave) override public returns (bool) {
+    (RebalanceAction rebalanceAction, uint256 amountToBuyOrSell) = this.rebalanceInfo(usdcAmountToHave);
+
+    if (rebalanceAction == RebalanceAction.Buy) {
+      this.buy(amountToBuyOrSell);
+    } else if (rebalanceAction == RebalanceAction.Sell) {
+      this.sell(amountToBuyOrSell);
+    }
+
+    this.rebalanceCollateral();
+    return true;
+
   }
 }

@@ -6,6 +6,7 @@ import {GlpUtils} from "src/GlpUtils.sol";
 import {IVaultReader} from "gmx/IVaultReader.sol";
 import {GlpTokenAllocation} from "src/GlpTokenAllocation.sol";
 import {TokenExposure} from "src/TokenExposure.sol";
+import {ERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 contract GlpUtilsTest is Test {
   GlpUtils private glpUtils;
@@ -14,11 +15,12 @@ contract GlpUtilsTest is Test {
   uint256 expectedUsdgAmount;
   uint256 expectedWeight;
   address[] private tokens = new address[](2);
-
+  address usdcAddress = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
+  address ethAddress = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
 
   function setUp() public {
-    tokens[0] = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
-    tokens[1] = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+    tokens[0] = usdcAddress;
+    tokens[1] = ethAddress;
 
     uint256[] memory mockResponse = new uint256[](28);
     mockResponse[0] = 114197608576723;
@@ -56,6 +58,19 @@ contract GlpUtilsTest is Test {
       abi.encode(mockResponse)
     );
 
+
+    vm.mockCall(
+      usdcAddress,
+      abi.encodeWithSelector(ERC20.symbol.selector),
+      abi.encode("USDC")
+    );
+
+    vm.mockCall(
+      ethAddress,
+      abi.encodeWithSelector(ERC20.symbol.selector),
+      abi.encode("ETH")
+    );
+
     glpUtils = new GlpUtils();
   }
 
@@ -82,8 +97,10 @@ contract GlpUtilsTest is Test {
     
     assertEq(glpTokenExposures[0].token, 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8);
     assertEq(glpTokenExposures[0].amount, 580200);
+    assertEq(glpTokenExposures[0].symbol, "USDC");
 
     assertEq(glpTokenExposures[1].token, 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1);
     assertEq(glpTokenExposures[1].amount, 419700);
+    assertEq(glpTokenExposures[1].symbol, "ETH"); 
   }
 }

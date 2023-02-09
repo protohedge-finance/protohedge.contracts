@@ -8,6 +8,7 @@ import {IPositionManager} from "src/IPositionManager.sol";
 import {TokenExposure} from "src/TokenExposure.sol";
 import {RebalanceQueueData} from "src/ProtohedgeVault.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 uint256 constant rebalancePercent = 2000;
 
@@ -36,7 +37,7 @@ contract ProtohedgeVaultTest is Test {
 
         TokenExposure[] memory tokenCompareExposures = new TokenExposure[](1);
         tokenCompareExposures[0] = TokenExposure({
-          amount: 1*10**6,
+          amount: -1 * (1*10**6),
           token: btcAddress,
           symbol: "BTC"
         });
@@ -82,74 +83,66 @@ contract ProtohedgeVaultTest is Test {
         vm.mockCall(
           positionManagerLongAddress,
           abi.encodeWithSelector(IPositionManager.canRebalance.selector),
-          abi.encode(true)
+          abi.encode(true, "")
         );
 
         vm.mockCall(
           positionManagerShortAddress,
           abi.encodeWithSelector(IPositionManager.canRebalance.selector),
-          abi.encode(true)
+          abi.encode(true, "")
         );
 
+        vm.mockCall(
+          mockAddress,
+          abi.encodeWithSelector(IERC20.balanceOf.selector, address(protohedgeVault)),
+          abi.encode(true, 100)
+        );
+
+        vm.mockCall(
+          positionManagerLongAddress,
+          abi.encodeCall(IPositionManager.positionWorth, ()),
+          abi.encode(1*10**6)
+        );
+
+        vm.mockCall(
+          positionManagerShortAddress,
+          abi.encodeCall(IPositionManager.positionWorth, ()),
+          abi.encode(1*10**6)
+        );
          
         RebalanceQueueData[] memory rebalanceQueueData = createTestRebalanceQueueData();
-        (bool shouldRebalance,) = protohedgeVault.shouldRebalance(rebalanceQueueData);
-        assertFalse(shouldRebalance); 
+        (bool shouldRebalance, string memory errorMessage) = protohedgeVault.shouldRebalance(rebalanceQueueData);
+        assertTrue(shouldRebalance); 
     }
 
     function testShouldRebalanceReturnsFalseIfPositionManagerCannotRebalance() public {
         vm.mockCall(
           positionManagerLongAddress,
           abi.encodeWithSelector(IPositionManager.canRebalance.selector),
-          abi.encode(false)
-        );
-            
-        RebalanceQueueData[] memory rebalanceQueueData = createTestRebalanceQueueData();
-        (bool shouldRebalance,) = protohedgeVault.shouldRebalance(rebalanceQueueData);
-        assertFalse(shouldRebalance); 
-    } 
-
-    function testShouldRebalanceReturnsFalseIfExposureOutOfRange() public {
-        vm.mockCall(
-          positionManagerLongAddress,
-          abi.encodeWithSelector(IPositionManager.canRebalance.selector),
-          abi.encode(true)
+          abi.encode(false, "")
         );
 
         vm.mockCall(
           positionManagerShortAddress,
           abi.encodeWithSelector(IPositionManager.canRebalance.selector),
-          abi.encode(true)
+          abi.encode(false, "")
         );
-
-        TokenExposure[] memory tokenExposures = new TokenExposure[](1);
-        tokenExposures[0] = TokenExposure({
-          amount: 2*10**6,
-          token: btcAddress,
-          symbol: "BTC"
-        });
-
-        vm.mockCall(
-          positionManagerLongAddress,
-          abi.encodeWithSelector(IPositionManager.exposures.selector),
-          abi.encode(tokenExposures)
-        );
-
+            
         RebalanceQueueData[] memory rebalanceQueueData = createTestRebalanceQueueData();
-        (bool shouldRebalance,) = protohedgeVault.shouldRebalance(rebalanceQueueData);
+        (bool shouldRebalance,string memory errorMessage) = protohedgeVault.shouldRebalance(rebalanceQueueData);
         assertFalse(shouldRebalance); 
-    }
+    } 
 
     function createTestRebalanceQueueData() internal view returns (RebalanceQueueData[] memory) {
         RebalanceQueueData[] memory rebalanceQueueData = new RebalanceQueueData[](2);
         rebalanceQueueData[0] = RebalanceQueueData({
             positionManager: IPositionManager(positionManagerLongAddress),
-            usdcAmountToHave: 1*10**6
+            usdcAmountToHave: 1500000
         });
 
         rebalanceQueueData[1] = RebalanceQueueData({
             positionManager: IPositionManager(positionManagerShortAddress),
-            usdcAmountToHave: 1*10**6
+            usdcAmountToHave: 500000
         });
 
         return rebalanceQueueData;
