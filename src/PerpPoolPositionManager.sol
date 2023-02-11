@@ -144,4 +144,6 @@ contract PerpPoolPositionManager is IPositionManager, Initializable, UUPSUpgrade
   function collateralRatio() override external pure returns (uint256) {
     return BASIS_POINTS_DIVISOR;
   }
+
+  function liquidate() override external {}
 }

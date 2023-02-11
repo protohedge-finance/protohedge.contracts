@@ -19,6 +19,7 @@ import {PositionType} from "src/PositionType.sol";
 import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {BASIS_POINTS_DIVISOR} from "src/Constants.sol";
 import {RebalanceAction} from "src/RebalanceAction.sol";
+import {IStakedGlp} from "gmx/IStakedGlp.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
@@ -42,6 +43,7 @@ contract GlpPositionManager is IPositionManager, Initializable, UUPSUpgradeable,
   ERC20 private wethToken;
   IRewardRouter private rewardRouter;
   IGlpManager private glpManager;
+  IStakedGlp private stakedGlp;
   address private ethPriceFeedAddress;
   address[] private glpTokens;
 
@@ -58,7 +60,9 @@ contract GlpPositionManager is IPositionManager, Initializable, UUPSUpgradeable,
     address _wethAddress,
     address _ethPriceFeedAddress, 
     address _rewardRouterAddress,
-    address _protohedgeVaultAddress 
+    address _protohedgeVaultAddress,
+    address _stakedGlpAddress
+    
   ) public initializer {
     priceUtils = PriceUtils(_priceUtilsAddress);
     glpUtils = GlpUtils(_glpUtilsAddress);
@@ -67,6 +71,8 @@ contract GlpPositionManager is IPositionManager, Initializable, UUPSUpgradeable,
     protohedgeVault = ProtohedgeVault(_protohedgeVaultAddress);
     rewardRouter = IRewardRouter(_rewardRouterAddress);
     glpManager = IGlpManager(_glpManagerAddress);
+    stakedGlp = IStakedGlp(_stakedGlpAddress);
+
     ethPriceFeedAddress = _ethPriceFeedAddress;
 
     __Ownable_init();
@@ -78,9 +84,13 @@ contract GlpPositionManager is IPositionManager, Initializable, UUPSUpgradeable,
     return "Glp";
   }
 
+  function getTokenAmount() public view returns (uint256) {
+    return stakedGlp.balanceOf(address(this));
+  }
+
   function positionWorth() override public view returns (uint256) {
     uint256 glpPrice = priceUtils.glpPrice();
-    return (tokenAmount * glpPrice / GLP_MULTIPLIER);
+    return (getTokenAmount() * glpPrice / GLP_MULTIPLIER);
   }
 
   function costBasis() override public view returns (uint256) {
@@ -94,17 +104,15 @@ contract GlpPositionManager is IPositionManager, Initializable, UUPSUpgradeable,
     uint256 glpAmount = rewardRouter.mintAndStakeGlp(address(usdcToken), usdcAmount, 0, 0);
 
     _costBasis += usdcAmount;
-    tokenAmount += glpAmount;  
     return glpAmount;
   }
 
   function sell(uint256 usdcAmount) override external returns (uint256) {
     uint256 currentPrice = priceUtils.glpPrice();
-    uint256 glpToSell = Math.min(usdcAmount * currentPrice * usdcToken.decimals(), tokenAmount);
-
+    uint256 glpToSell = Math.min(usdcAmount * currentPrice * usdcToken.decimals(), getTokenAmount());
     uint256 usdcRetrieved = rewardRouter.unstakeAndRedeemGlp(address(usdcToken), glpToSell, 0, address(protohedgeVault));
+    
     _costBasis -= usdcRetrieved;
-    tokenAmount -= glpToSell;
     return 1;
   }
 
@@ -159,7 +167,6 @@ contract GlpPositionManager is IPositionManager, Initializable, UUPSUpgradeable,
     uint256 glpAmount = rewardRouter.mintAndStakeGlp(address(wethToken), amountOfWeth, 0, 0);
 
     _costBasis += uint256(usdcAmount);
-    tokenAmount += glpAmount;  
   }
 
   function collateralRatio() override external pure returns (uint256) {
@@ -168,5 +175,17 @@ contract GlpPositionManager is IPositionManager, Initializable, UUPSUpgradeable,
 
   function setGlpUtils(address glpUtilsAddress) external {
     glpUtils = GlpUtils(glpUtilsAddress); 
+  }
+
+  function liquidate() override external {
+    uint256 currentPrice = priceUtils.glpPrice();
+    uint256 glpToSell = getTokenAmount(); 
+    uint256 usdcRetrieved = rewardRouter.unstakeAndRedeemGlp(address(usdcToken), glpToSell, 0, address(protohedgeVault));
+    
+    _costBasis = 0;
+  }
+
+  function setStakedGlp(address _stakedGlpAddress) public {
+    stakedGlp = IStakedGlp(_stakedGlpAddress);
   }
 }

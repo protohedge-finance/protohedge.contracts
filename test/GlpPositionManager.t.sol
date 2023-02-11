@@ -24,6 +24,7 @@ contract GlpPositionManagerTest is Test {
         mockAddress,
         mockAddress,
         mockAddress,
+        mockAddress,
         mockAddress
     );
 

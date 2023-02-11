@@ -111,7 +111,7 @@ contract ProtohedgeVaultTest is Test {
         );
          
         RebalanceQueueData[] memory rebalanceQueueData = createTestRebalanceQueueData();
-        (bool shouldRebalance, string memory errorMessage) = protohedgeVault.shouldRebalance(rebalanceQueueData);
+        (bool shouldRebalance,) = protohedgeVault.shouldRebalance(rebalanceQueueData);
         assertTrue(shouldRebalance); 
     }
 
@@ -129,7 +129,7 @@ contract ProtohedgeVaultTest is Test {
         );
             
         RebalanceQueueData[] memory rebalanceQueueData = createTestRebalanceQueueData();
-        (bool shouldRebalance,string memory errorMessage) = protohedgeVault.shouldRebalance(rebalanceQueueData);
+        (bool shouldRebalance,) = protohedgeVault.shouldRebalance(rebalanceQueueData);
         assertFalse(shouldRebalance); 
     } 
 

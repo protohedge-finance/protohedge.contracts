@@ -76,9 +76,6 @@ abstract contract IPositionManager {
     });
   }
 
-  function liquidate() virtual external {
-    this.sell(this.positionWorth());
-  }
-
+  function liquidate() virtual external;
   function collateralRatio() virtual external view returns (uint256);
 }

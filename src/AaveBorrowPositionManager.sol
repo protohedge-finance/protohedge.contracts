@@ -20,7 +20,7 @@ import {IAaveProtocolDataProvider} from "aave/IAaveProtocolDataProvider.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {RebalanceAction} from "src/RebalanceAction.sol";
 
-uint256 constant MIN_BUY_OR_SELL_AMOUNT = 300000;
+uint256 constant MIN_BUY_OR_SELL_AMOUNT = 100000;
 
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
@@ -94,11 +94,11 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
   }
 
   function positionWorth() override public view returns (uint256) {
-    return getCollateral() + getLoanWorth();
+    return getLoanWorth();
   }
 
   function costBasis() override public view returns (uint256) {
-    return collateral + usdcAmountBorrowed;
+    return usdcAmountBorrowed;
   }
 
   function pnl() override external view returns (int256) {
@@ -106,21 +106,23 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
   }
 
   function buy(uint256 usdcAmount) override external returns (uint256) {
-    uint256 ratio = collateralRatio();
-    uint256 desiredCollateral = usdcAmount * ratio / BASIS_POINTS_DIVISOR;
-    
-    require(protohedgeVault.getAvailableLiquidity() >= desiredCollateral, "Insufficient liquidity");
-    usdcToken.transferFrom(address(protohedgeVault), address(this), desiredCollateral);
+    uint256 targetRatio = collateralRatio();
+    uint256 desiredTotalCollateral = (getLoanWorth() + usdcAmount) * targetRatio / BASIS_POINTS_DIVISOR;
+    int256 desiredCollateral = int256(desiredTotalCollateral - getCollateral());
 
-    bytes32 supplyArgs = l2Encoder.encodeSupplyParams(
-      address(usdcToken),
-      desiredCollateral,
-      0 
-    );
+    if (desiredCollateral >= 0) {
+      require(protohedgeVault.getAvailableLiquidity() >= uint256(desiredCollateral), "Insufficient liquidity");
+      usdcToken.transferFrom(address(protohedgeVault), address(this), uint256(desiredCollateral));
 
-    l2Pool.supply(supplyArgs);
+      bytes32 supplyArgs = l2Encoder.encodeSupplyParams(
+        address(usdcToken),
+        uint256(desiredCollateral),
+        0 
+      );
 
-    collateral += desiredCollateral;
+      l2Pool.supply(supplyArgs);
+    }
+
     uint256 tokensToBorrow = usdcAmount * (1*10**decimals) / price();
 
     bytes32 borrowArgs = l2Encoder.encodeBorrowParams(
@@ -145,8 +147,8 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
   }
 
   function sell(uint256 usdcAmount) override external returns (uint256) {
-    uint256 loanWorth = getLoanWorth();
-    uint256 usdcAmountToRepay = Math.min(loanWorth, usdcAmount);
+    uint256 loanWorth = getLoanWorth(); // 101105
+    uint256 usdcAmountToRepay = Math.min(loanWorth, usdcAmount);  // 101105
     uint256 feeBasisPoints = glpUtils.getFeeBasisPoints(address(usdcToken), address(borrowToken), usdcAmountToRepay);
     uint256 usdcAmountWithSlippage = usdcAmountToRepay * (BASIS_POINTS_DIVISOR + feeBasisPoints) / BASIS_POINTS_DIVISOR;
     usdcToken.transferFrom(address(protohedgeVault), address(this), usdcAmountWithSlippage);
@@ -158,6 +160,7 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
     uint256 amountBefore = borrowToken.balanceOf(address(this));
     gmxRouter.swap(swapPath, usdcAmountWithSlippage, 0, address(this));
     uint256 amountSwapped = Math.min(borrowToken.balanceOf(address(this)) - amountBefore, getAmountOfTokens());
+    
     bytes32 repayArgs = l2Encoder.encodeRepayParams(
       address(borrowToken),
       amountSwapped,
@@ -166,8 +169,15 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
 
     l2Pool.repay(repayArgs);
 
-    usdcAmountBorrowed -= amountSwapped * this.price() / (1*10**decimals);
 
+    uint256 amountBorrowed = amountSwapped * this.price() / (1*10**decimals);
+    if (amountBorrowed > usdcAmountBorrowed) {
+      usdcAmountBorrowed = 0;
+    } else {
+      usdcAmountBorrowed -= amountBorrowed;      
+    }
+
+    rebalanceCollateral();
 
     return amountSwapped;
   }
@@ -175,13 +185,23 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
   function rebalanceCollateral() public {
     uint256 loanWorth = getLoanWorth();
     uint256 currentCollateral = getCollateral();
-    uint256 expectedCollateral = loanWorth / targetLtv * 100;
+    uint256 expectedCollateral = loanWorth * PERCENTAGE_MULTIPLIER / getTargetLtv();
     uint256 currentLoanToValue = getLoanToValue();
-    uint256 upperBound = (targetLtv + 5) * PERCENTAGE_MULTIPLIER / 10;
-    uint256 lowerBound = (targetLtv - 5) * PERCENTAGE_MULTIPLIER / 10;
+    uint256 upperBound = (getTargetLtv() + 500);
+    uint256 lowerBound = (getTargetLtv() - 500);
     
     if (currentLoanToValue > upperBound) {
-      uint256 amountToWithdraw = currentCollateral - expectedCollateral;
+      uint256 amountToSupply = expectedCollateral - currentCollateral;
+
+      bytes32 supplyArgs = l2Encoder.encodeSupplyParams(
+        address(usdcToken),
+        amountToSupply,
+        0
+      );
+
+      l2Pool.supply(supplyArgs);
+    } else if (currentLoanToValue < lowerBound) {
+      uint256 amountToWithdraw = currentCollateral - expectedCollateral; // 
 
       bytes32 withdrawArgs = l2Encoder.encodeWithdrawParams(
         address(usdcToken),
@@ -189,16 +209,6 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
       );
 
       l2Pool.withdraw(withdrawArgs);
-    } else if (currentLoanToValue < lowerBound) {
-      uint256 amountToSupply = expectedCollateral - currentCollateral;
-
-      bytes32 supplyArgs = l2Encoder.encodeSupplyParams(
-        address(usdcToken),
-        amountToSupply,
-        0 
-      );
-
-      l2Pool.supply(supplyArgs);
     }
   }
 
@@ -250,7 +260,7 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
 
   function getLoanToValue() public view returns (uint256) {
     return getCollateral() > 0
-      ? getLoanWorth() * PERCENTAGE_MULTIPLIER / getCollateral() 
+      ? getLoanWorth() * PERCENTAGE_MULTIPLIER * 10 / getCollateral() 
       : 0;
   }
 
@@ -274,7 +284,12 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
   }
 
   function collateralRatio() override public view returns (uint256) {
-    return 100 * BASIS_POINTS_DIVISOR / targetLtv;
+    return PERCENTAGE_MULTIPLIER * PERCENTAGE_MULTIPLIER / getTargetLtv();
+  }
+
+  function getTargetLtv() public view returns (uint256) {
+    (,,uint256 liquidationThreshold,,,,,,,) = aaveProtocolDataProvider.getReserveConfigurationData(address(borrowToken));
+    return liquidationThreshold - 1000;
   }
 
   function stats() override external view returns (PositionManagerStats memory) {
@@ -290,7 +305,7 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
       collateralRatio: this.collateralRatio(),
       loanWorth: getLoanWorth(),
       liquidationLevel: getLiquidationLevel(),
-      collateral: collateral
+      collateral: getCollateral() 
     });
   }
 
@@ -303,8 +318,10 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
       this.sell(amountToBuyOrSell);
     }
 
-    this.rebalanceCollateral();
     return true;
+  }
 
+  function liquidate() override external {
+    this.sell(this.positionWorth());
   }
 }

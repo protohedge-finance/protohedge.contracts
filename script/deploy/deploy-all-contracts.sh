@@ -32,6 +32,7 @@ export AAVE_L2_POOL=$(read_address ".aaveL2Pool")
 export AAVE_L2_ENCODER=$(read_address ".aaveL2Encoder")
 export ETH_PRICE_FEED=$(read_address ".ethPriceFeed")
 export AAVE_PROTOCOL_DATA_PROVIDER=$(read_address ".aaveProtocolDataProvider")
+export STAKED_GLP=$(read_address ".stakedGlp")
 
 export VERIFY=false
 export BTC_PERP_POOL_POSITION_MANAGER_NAME="BtcPerpPool"
