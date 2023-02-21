@@ -102,7 +102,7 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
   }
 
   function pnl() override external view returns (int256) {
-    return int256(positionWorth()) - int256(costBasis());
+    return int256(costBasis() - positionWorth());
   }
 
   function buy(uint256 usdcAmount) override external returns (uint256) {
@@ -241,7 +241,13 @@ contract AaveBorrowPositionManager is IPositionManager, Initializable, UUPSUpgra
   function claim() external {
   }
 
-  function compound() override external {}
+  function compound() override external pure returns (uint256) {
+    return 0;
+  }
+
+  function canCompound() override external pure returns (bool) {
+    return false;
+  }
 
   function canRebalance(uint256 amountOfUsdcToHave) override external view returns (bool, string memory) {
     (,uint256 amountToBuyOrSell) = this.rebalanceInfo(amountOfUsdcToHave);

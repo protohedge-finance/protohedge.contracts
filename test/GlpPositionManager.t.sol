@@ -6,6 +6,7 @@ import {GlpPositionManager} from "src/GlpPositionManager.sol";
 import {IGlpManager} from "gmx/IGlpManager.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {IRewardRouter} from "gmx/IRewardRouter.sol";
+import {IRewardRouterV2} from "gmx/IRewardRouterV2.sol";
 import {PriceUtils} from "src/PriceUtils.sol";
 
 contract GlpPositionManagerTest is Test {
@@ -17,6 +18,7 @@ contract GlpPositionManagerTest is Test {
     glpPositionManager = new GlpPositionManager();
 
     glpPositionManager.initialize(
+        mockAddress,
         mockAddress,
         mockAddress,
         mockAddress,
@@ -48,7 +50,7 @@ contract GlpPositionManagerTest is Test {
 
     vm.mockCall(
         mockAddress,
-        abi.encodeWithSelector(IRewardRouter.mintAndStakeGlp.selector),
+        abi.encodeWithSelector(IRewardRouterV2.mintAndStakeGlp.selector),
         abi.encode(1996*10**15)
     );
   }

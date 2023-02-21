@@ -25,9 +25,10 @@ contract DeployGlpPositionManager is Script, Test, Deployer {
       vm.envAddress("USDC"),
       vm.envAddress("ETH"),
       vm.envAddress("ETH_PRICE_FEED"),
-      vm.envAddress("REWARD_ROUTER"),
+      vm.envAddress("REWARD_ROUTER_V2"),
       vm.envAddress("GLP_AAVE_BORROW_VAULT"),
-      vm.envAddress("STAKED_GLP")
+      vm.envAddress("STAKED_GLP"),
+      vm.envAddress("REWARD_ROUTER")
     );
 
     vm.setEnv("GLP_POSITION_MANAGER", toString(proxyAddress));

@@ -229,6 +229,17 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     rebalancePercent = _rebalancePercent;
   }
 
+  function compound() external returns (uint256) {
+    uint256 totalUsdcCompounded = 0;
+    for (uint256 i = 0; i < positionManagers.length; i++) {
+      if (positionManagers[i].canCompound()) {
+        totalUsdcCompounded += positionManagers[i].compound();
+      }
+    }
+
+    return totalUsdcCompounded;
+  }
+
   function liquidate() external {
     for (uint256 i = 0; i < positionManagers.length; i++) {
       positionManagers[i].liquidate();

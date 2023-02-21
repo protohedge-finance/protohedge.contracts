@@ -12,6 +12,7 @@ export RPC_URL="http://localhost:8545"
 export VAULT_READER=$(read_address ".vaultReader")
 export VAULT=$(read_address ".vault")
 export REWARD_ROUTER=$(read_address ".rewardRouter")
+export REWARD_ROUTER_V2=$(read_address ".rewardRouterV2")
 export POSITION_MANAGER=$(read_address ".positionManager")
 export GLP_MANAGER=$(read_address ".glpManager")
 export GLP_TOKEN=$(read_address ".glpToken")
