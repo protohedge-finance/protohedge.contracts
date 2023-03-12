@@ -67,7 +67,8 @@ contract ProtohedgeVaultTest is Test {
            mockAddress,
            mockAddress,
            mockAddress,
-           rebalancePercent   
+           rebalancePercent,
+           mockAddress
         );
 
         IPositionManager longPositionManager = IPositionManager(positionManagerLongAddress);

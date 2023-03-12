@@ -29,6 +29,8 @@ struct RebalanceQueueData {
 error PositionManagerCannotRebalance(address positionManager, uint256 amount, string errorMessage);
 
 contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
+  event TotalCompound(uint256 amount);
+
   string public vaultName; 
   ERC20 private usdcToken;
   PhvToken private phvToken;
@@ -38,14 +40,16 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
   uint256 private gasCostPayed;
   // % diff in exposure to rebalance on
   uint256 public rebalancePercent;
+  ERC20 public wethToken;
 
-  function initialize(string memory _vaultName, address _usdcAddress, address _priceUtilsAddress, address _ethPriceFeedAddress, uint256 _rebalancePercent) public initializer {
+  function initialize(string memory _vaultName, address _usdcAddress, address _priceUtilsAddress, address _ethPriceFeedAddress, uint256 _rebalancePercent, address _wethTokenAddress) public initializer {
     vaultName = _vaultName;
     usdcToken = ERC20(_usdcAddress);
     rebalancePercent = _rebalancePercent;
     priceUtils = PriceUtils(_priceUtilsAddress);
     ethPriceFeedAddress = _ethPriceFeedAddress;
     phvToken = new PhvToken();
+    wethToken = ERC20(_wethTokenAddress);
 
     __Ownable_init();
   }
@@ -229,15 +233,23 @@ contract ProtohedgeVault is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     rebalancePercent = _rebalancePercent;
   }
 
+  function setWethToken(address _wethTokenAddress) external {
+    wethToken = ERC20(_wethTokenAddress);
+  }
+
   function compound() external returns (uint256) {
-    uint256 totalUsdcCompounded = 0;
+    uint256 wethBefore = wethToken.balanceOf(address(this));
     for (uint256 i = 0; i < positionManagers.length; i++) {
       if (positionManagers[i].canCompound()) {
-        totalUsdcCompounded += positionManagers[i].compound();
+        positionManagers[i].compound();
       }
     }
+    uint256 wethAfter = wethToken.balanceOf(address(this));
+    uint256 wethCompounded = wethAfter - wethBefore;
 
-    return totalUsdcCompounded;
+    emit TotalCompound(wethCompounded);
+
+    return wethCompounded;
   }
 
   function liquidate() external {

@@ -6,7 +6,11 @@ import {TokenAllocation} from "src/TokenAllocation.sol";
 import {RebalanceAction} from "src/RebalanceAction.sol";
 import {PositionManagerStats} from "src/PositionManagerStats.sol";
 
+
 abstract contract IPositionManager {
+  event Compound(uint256 amount);
+  event WethCompound(uint256 amount);
+
   uint256 public id;
   function name() virtual public view returns (string memory);
   function positionWorth() virtual external view returns (uint256);

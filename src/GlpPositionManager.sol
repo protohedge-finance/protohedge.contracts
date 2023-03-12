@@ -28,6 +28,7 @@ import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable
 import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 
 contract GlpPositionManager is IPositionManager, Initializable, UUPSUpgradeable, OwnableUpgradeable {
+
   uint256 public constant USDC_MULTIPLIER = 1*10**6;
   uint256 public constant GLP_MULTIPLIER = 1*10**18;
   uint256 public constant DEFAULT_SLIPPAGE = 30;
@@ -159,15 +160,17 @@ contract GlpPositionManager is IPositionManager, Initializable, UUPSUpgradeable,
 
 
   function compound() override external returns (uint256) {
-    rewardRouter.handleRewards(false, false, false, false, false, true, false);  
+    uint256 amountOfWethBefore = wethToken.balanceOf(address(this));
+    rewardRouter.handleRewards(false, false, false, false, false, true, false);
     uint256 amountOfWeth = wethToken.balanceOf(address(this));
-    wethToken.approve(address(glpManager), amountOfWeth);
-    uint256 glpAmount = rewardRouterV2.mintAndStakeGlp(address(wethToken), amountOfWeth, 0, 0);
-    return (glpAmount * price() / GLP_MULTIPLIER);
+    emit Compound(amountOfWeth);
+    wethToken.transfer(address(protohedgeVault), amountOfWeth);
+
+    return amountOfWeth;
   }
 
-  function canCompound() override external pure returns (bool) {
-    return true;
+  function canCompound() override external view returns (bool) {
+    return positionWorth() > 0;
   }
 
   function collateralRatio() override external pure returns (uint256) {
