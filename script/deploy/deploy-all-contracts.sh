@@ -9,6 +9,8 @@ read_address () {
 }
 
 export RPC_URL="http://localhost:8545"
+export ACCOUNT_ADDRESS=$(read_address ".accountAddress")
+export REBALANCE_ACCOUNT=$(read_address ".rebalanceAccount")
 export VAULT_READER=$(read_address ".vaultReader")
 export VAULT=$(read_address ".vault")
 export REWARD_ROUTER=$(read_address ".rewardRouter")

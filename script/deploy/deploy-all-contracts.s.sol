@@ -21,37 +21,69 @@ import {IPositionManager} from "src/IPositionManager.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 
 contract DeployAllContracts is Script, Test {
-  using stdStorage for StdStorage;
+    using stdStorage for StdStorage;
 
-  function run() public {
-    address priceUtilsAddress = new DeployPriceUtils().run();    
-    address glpUtilsAddress = new DeployGlpUtils().run();
-    address perpPoolUtilsAddress = new DeployPerpPoolUtils().run();
-    DeployGlpAaveBorrowVault deployGlpAaveBorrowVault = new DeployGlpAaveBorrowVault();
-    address glpAaveBorrowVaultAddress = deployGlpAaveBorrowVault.run(); 
-    address aaveBorrowBtcPositionManagerAddress = new DeployAaveBtcBorrowPositionManager().run();
-    address aaveBorrowEthPositionManagerAddress = new DeployAaveEthBorrowPositionManager().run();
-    DeployGlpPositionManager deployGlpPositionManager  = new DeployGlpPositionManager();
-    address glpPositionManagerAddress = deployGlpPositionManager.run();
-   
-    deployGlpPositionManager.setGlpTokens(glpPositionManagerAddress);
+    function run() public {
+        address priceUtilsAddress = new DeployPriceUtils().run();
+        address glpUtilsAddress = new DeployGlpUtils().run();
+        address perpPoolUtilsAddress = new DeployPerpPoolUtils().run();
+        DeployGlpAaveBorrowVault deployGlpAaveBorrowVault = new DeployGlpAaveBorrowVault();
+        address glpAaveBorrowVaultAddress = deployGlpAaveBorrowVault.run();
+        address aaveBorrowBtcPositionManagerAddress = new DeployAaveBtcBorrowPositionManager()
+                .run();
+        address aaveBorrowEthPositionManagerAddress = new DeployAaveEthBorrowPositionManager()
+                .run();
+        DeployGlpPositionManager deployGlpPositionManager = new DeployGlpPositionManager();
+        address glpPositionManagerAddress = deployGlpPositionManager.run();
 
-    IPositionManager[] memory glpAaveBorrowVaultPositionManagers = new IPositionManager[](3);
-    glpAaveBorrowVaultPositionManagers[0] = IPositionManager(glpPositionManagerAddress);
-    glpAaveBorrowVaultPositionManagers[1] = IPositionManager(aaveBorrowBtcPositionManagerAddress);
-    glpAaveBorrowVaultPositionManagers[2] = IPositionManager(aaveBorrowEthPositionManagerAddress);
+        deployGlpPositionManager.setGlpTokens(glpPositionManagerAddress);
 
-    deployGlpAaveBorrowVault.setPositionManagers(glpAaveBorrowVaultAddress, glpAaveBorrowVaultPositionManagers);
+        IPositionManager[]
+            memory glpAaveBorrowVaultPositionManagers = new IPositionManager[](
+                3
+            );
+        glpAaveBorrowVaultPositionManagers[0] = IPositionManager(
+            glpPositionManagerAddress
+        );
+        glpAaveBorrowVaultPositionManagers[1] = IPositionManager(
+            aaveBorrowBtcPositionManagerAddress
+        );
+        glpAaveBorrowVaultPositionManagers[2] = IPositionManager(
+            aaveBorrowEthPositionManagerAddress
+        );
 
-    emit log_named_address("It is", address(this));
-    emit log_named_address("PriceUtils is: ", priceUtilsAddress);
-    emit log_named_address("GlpUtils is: ", glpUtilsAddress);
-    emit log_named_address("PerpPoolUtils is: ", perpPoolUtilsAddress);
+        address rebalanceAccount = vm.envAddress("REBALANCE_ACCOUNT");
 
-    emit log_named_address("GlpAaveBorrowVault is: ", glpAaveBorrowVaultAddress);
-    
-    emit log_named_address("GlpPositionManager is: ", glpPositionManagerAddress);
-    emit log_named_address("AaveBorrowBtcPositionManager is: ", aaveBorrowBtcPositionManagerAddress);
-    emit log_named_address("AaveBorrowEthPositionManager is: ", aaveBorrowEthPositionManagerAddress);
-  } 
+        deployGlpAaveBorrowVault.setPositionManagers(
+            glpAaveBorrowVaultAddress,
+            glpAaveBorrowVaultPositionManagers
+        );
+
+        deployGlpAaveBorrowVault.transferOwnership(
+            glpAaveBorrowVaultAddress,
+            rebalanceAccount
+        );
+
+        emit log_named_address("PriceUtils is: ", priceUtilsAddress);
+        emit log_named_address("GlpUtils is: ", glpUtilsAddress);
+        emit log_named_address("PerpPoolUtils is: ", perpPoolUtilsAddress);
+
+        emit log_named_address(
+            "GlpAaveBorrowVault is: ",
+            glpAaveBorrowVaultAddress
+        );
+
+        emit log_named_address(
+            "GlpPositionManager is: ",
+            glpPositionManagerAddress
+        );
+        emit log_named_address(
+            "AaveBorrowBtcPositionManager is: ",
+            aaveBorrowBtcPositionManagerAddress
+        );
+        emit log_named_address(
+            "AaveBorrowEthPositionManager is: ",
+            aaveBorrowEthPositionManagerAddress
+        );
+    }
 }
